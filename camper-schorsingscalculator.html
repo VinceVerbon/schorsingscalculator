@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Camper Schorsingscalculator</title>
+<style>
+  /* ============== Theme tokens ============== */
+  :root {
+    --color-bg: #ffffff;
+    --color-surface: #f7f7f5;
+    --color-surface-2: #eeeeea;
+    --color-border: #d8d8d2;
+    --color-text: #1a1a1a;
+    --color-text-muted: #5a5a5a;
+    --color-primary: #2F4C6E;
+    --color-primary-fg: #ffffff;
+    --color-accent: #FFC917;
+    --color-accent-fg: #1a1a1a;
+    --color-good: #1e7a3c;
+    --color-good-bg: #e3f4e9;
+    --color-warn: #b76b00;
+    --color-warn-bg: #fdf1de;
+    --color-bad: #b3261e;
+    --color-bad-bg: #fbe6e4;
+    --color-active: #6c7da3;
+    --color-vacation: #2F4C6E;
+    --color-suspended: #FFC917;
+    --radius: 8px;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-bg: #14171c;
+      --color-surface: #1c2027;
+      --color-surface-2: #252a33;
+      --color-border: #353c47;
+      --color-text: #ececec;
+      --color-text-muted: #a4abb6;
+      --color-primary: #5a82b0;
+      --color-primary-fg: #ffffff;
+      --color-accent: #FFC917;
+      --color-accent-fg: #1a1a1a;
+      --color-good: #5fd58a;
+      --color-good-bg: #133221;
+      --color-warn: #f0b96b;
+      --color-warn-bg: #3a2a14;
+      --color-bad: #f08079;
+      --color-bad-bg: #3a1815;
+      --color-active: #5a6c8d;
+      --color-vacation: #5a82b0;
+      --color-suspended: #FFC917;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.3);
+    }
+  }
+
+  /* ============== Reset & base ============== */
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  h1, h2, h3 {
+    color: var(--color-primary);
+    margin: 0 0 12px 0;
+    line-height: 1.2;
+  }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; margin-top: 4px; }
+  h3 { font-size: 1.05rem; }
+  p { margin: 0 0 12px 0; }
+  small { color: var(--color-text-muted); }
+  a { color: var(--color-primary); }
+  hr { border: none; border-top: 1px solid var(--color-border); margin: 16px 0; }
+
+  /* ============== Header ============== */
+  header.app {
+    border-bottom: 3px solid var(--color-accent);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  header.app .subtitle {
+    color: var(--color-text-muted);
+    font-size: .9rem;
+    margin: 0;
+  }
+
+  /* ============== Tabs ============== */
+  nav.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 16px;
+  }
+  nav.tabs button {
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    color: var(--color-text-muted);
+    padding: 8px 12px;
+    font: inherit;
+    font-size: .92rem;
+    cursor: pointer;
+    border-radius: var(--radius) var(--radius) 0 0;
+    margin-bottom: -1px;
+  }
+  nav.tabs button:hover {
+    color: var(--color-text);
+    background: var(--color-surface);
+  }
+  nav.tabs button[aria-selected="true"] {
+    background: var(--color-bg);
+    border-color: var(--color-border);
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+  nav.tabs button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* ============== Sections ============== */
+  section.panel { display: none; }
+  section.panel[aria-hidden="false"] { display: block; }
+
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 + p { color: var(--color-text-muted); }
+
+  /* ============== Forms ============== */
+  form { margin: 0; }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .field label {
+    font-weight: 600;
+    font-size: .9rem;
+  }
+  .field .hint {
+    color: var(--color-text-muted);
+    font-size: .8rem;
+  }
+  input[type="date"],
+  input[type="number"],
+  input[type="text"],
+  select {
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    font: inherit;
+    width: 100%;
+    min-height: 40px;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+  .radio-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg);
+    cursor: pointer;
+    font-weight: normal;
+  }
+  .radio-group input[type="radio"]:checked + span {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  @media (min-width: 520px) {
+    .grid-2 { grid-template-columns: 1fr 1fr; gap: 12px; }
+  }
+
+  button.btn {
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius);
+    padding: 9px 14px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    min-height: 40px;
+  }
+  button.btn:hover { filter: brightness(1.05); }
+  button.btn-secondary {
+    background: var(--color-surface-2);
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+  button.btn-accent {
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+    border-color: var(--color-accent);
+  }
+  button.btn-icon {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    border-radius: var(--radius);
+    padding: 4px 10px;
+    cursor: pointer;
+    font: inherit;
+    min-height: 32px;
+  }
+
+  /* ============== Result blocks ============== */
+  .result {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-top: 12px;
+  }
+  .result.empty {
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px dashed var(--color-border);
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-row .label { color: var(--color-text-muted); }
+  .result-row .value { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .result-headline {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 8px;
+  }
+  .result-headline.big {
+    font-size: 1.3rem;
+  }
+
+  /* Status banners */
+  .banner {
+    border-left: 4px solid var(--color-border);
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  .banner.good { background: var(--color-good-bg); border-left-color: var(--color-good); color: var(--color-good); }
+  .banner.warn { background: var(--color-warn-bg); border-left-color: var(--color-warn); color: var(--color-warn); }
+  .banner.bad  { background: var(--color-bad-bg);  border-left-color: var(--color-bad);  color: var(--color-bad); }
+  .banner .status-tag {
+    display: inline-block;
+    background: rgba(0,0,0,.1);
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-right: 6px;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+
+  /* ============== Timeline (Calc 2) ============== */
+  .timeline {
+    margin-top: 12px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 12px;
+  }
+  .timeline-bar {
+    display: flex;
+    height: 22px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    margin: 8px 0;
+  }
+  .seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary-fg);
+    font-size: .7rem;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .seg.vacation  { background: var(--color-vacation); color: white; }
+  .seg.suspended { background: var(--color-suspended); color: var(--color-accent-fg); }
+  .seg.active    { background: var(--color-active); color: white; }
+  .timeline-dates {
+    display: flex;
+    justify-content: space-between;
+    color: var(--color-text-muted);
+    font-size: .75rem;
+  }
+  .timeline-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    font-size: .8rem;
+  }
+  .timeline-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid var(--color-border);
+  }
+
+  /* ============== Vacation list (Calc 3) ============== */
+  .vacation-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    align-items: end;
+    margin-bottom: 8px;
+  }
+  @media (max-width: 519px) {
+    .vacation-row { grid-template-columns: 1fr 1fr; }
+    .vacation-row .remove-btn { grid-column: 1 / -1; justify-self: end; }
+  }
+
+  /* ============== Year calendar ============== */
+  .year-calendar {
+    margin-top: 16px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 8px;
+    overflow-x: auto;
+  }
+  .month-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .month-label {
+    width: 36px;
+    flex-shrink: 0;
+    font-size: .75rem;
+    color: var(--color-text-muted);
+    text-align: right;
+  }
+  .month-cells {
+    display: grid;
+    grid-template-columns: repeat(31, 1fr);
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+  }
+  .day-cell {
+    height: 14px;
+    background: var(--color-surface-2);
+    border-radius: 1px;
+  }
+  .day-cell.vacation  { background: var(--color-vacation); }
+  .day-cell.suspended { background: var(--color-suspended); }
+  .day-cell.active    { background: var(--color-active); }
+  .day-cell.empty     { background: transparent; }
+
+  /* ============== Tables ============== */
+  table.gaps {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: .9rem;
+  }
+  table.gaps th, table.gaps td {
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: top;
+  }
+  table.gaps th {
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+  table.gaps td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Calc 4 options */
+  .option-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .option-card.recommended {
+    border-color: var(--color-good);
+    background: var(--color-good-bg);
+  }
+  .option-card .opt-label { font-weight: 600; }
+  .option-card .opt-cost { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+  /* Help section */
+  .help-block h3 { margin-top: 16px; }
+  .help-block ul { padding-left: 20px; }
+  .help-block li { margin-bottom: 6px; }
+
+  /* Visually hidden for sr-only content */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+
+  /* Tariff badge */
+  .tariff-badge {
+    display: inline-block;
+    background: var(--color-primary);
+    color: var(--color-primary-fg);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  .tariff-badge.laag {
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+  }
+
+  /* Test results */
+  #test-results {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: .8rem;
+    background: var(--color-surface-2);
+    padding: 8px;
+    border-radius: var(--radius);
+    margin-top: 8px;
+    white-space: pre-wrap;
+  }
+  .test-pass { color: var(--color-good); }
+  .test-fail { color: var(--color-bad); font-weight: 700; }
+
+</style>
+</head>
+<body>
+<main>
+  <header class="app">
+    <h1>Camper Schorsingscalculator</h1>
+    <p class="subtitle">Bereken of, wanneer en hoe lang u uw camper bij de RDW kunt schorsen om motorrijtuigenbelasting te besparen.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Calculator-secties">
+    <button role="tab" id="tab-profile"  aria-controls="panel-profile"  aria-selected="true">Profiel</button>
+    <button role="tab" id="tab-calc1"    aria-controls="panel-calc1"    aria-selected="false">1. Vroegst ontschorsen</button>
+    <button role="tab" id="tab-calc2"    aria-controls="panel-calc2"    aria-selected="false">2. Tussen vakanties</button>
+    <button role="tab" id="tab-calc3"    aria-controls="panel-calc3"    aria-selected="false">3. Jaarplanning</button>
+    <button role="tab" id="tab-calc4"    aria-controls="panel-calc4"    aria-selected="false">4. Lange termijn</button>
+    <button role="tab" id="tab-help"     aria-controls="panel-help"     aria-selected="false">Regels &amp; uitleg</button>
+  </nav>
+
+  <!-- ============== PROFIEL ============== -->
+  <section class="panel" id="panel-profile" role="tabpanel" aria-labelledby="tab-profile" aria-hidden="false">
+    <div class="card">
+      <h2>Camperprofiel</h2>
+      <p>Wordt automatisch bewaard voor volgende sessies. Op basis hiervan bepalen we het schorsingstarief en uw MRB-besparing.</p>
+      <form id="profile-form">
+        <div class="field">
+          <label for="profile-label">Naam of label van de camper <span class="hint">(optioneel)</span></label>
+          <input type="text" id="profile-label" placeholder="bijv. Hymer 2018" />
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label for="profile-det">Datum eerste toelating (DET, veld B)</label>
+            <input type="text" id="profile-det" inputmode="numeric" placeholder="dd/mm/jjjj" maxlength="10" autocomplete="off" required />
+            <span class="hint">Bepaalt of u onder hoog of laag tarief valt.</span>
+          </div>
+
+          <div class="field">
+            <label for="profile-mass">Toegestane maximum massa (kg)</label>
+            <input type="number" id="profile-mass" min="500" max="20000" step="1" required />
+            <span class="hint">Boven 3500 kg geldt automatisch laag tarief.</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <span id="profile-reg-label" style="font-weight:600;font-size:.9rem">Kentekenregistratie</span>
+          <div class="radio-group" role="radiogroup" aria-labelledby="profile-reg-label">
+            <label><input type="radio" name="profile-reg" value="M1" checked /><span>M1 (personenauto)</span></label>
+            <label><input type="radio" name="profile-reg" value="N"  /><span>N (bedrijfsauto)</span></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="profile-mrb">MRB per kwartaal (€)</label>
+          <input type="number" id="profile-mrb" min="0" max="5000" step="0.01" value="556" required />
+          <span class="hint">Het bedrag dat u nu per kwartaal aan motorrijtuigenbelasting betaalt.</span>
+        </div>
+
+        <button type="button" class="btn" id="profile-save">Profiel opslaan</button>
+        <span id="profile-saved-msg" style="margin-left:12px; color:var(--color-good); font-size:.85rem;" aria-live="polite"></span>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Berekend</h3>
+      <div class="result" id="profile-derived">
+        <div class="result-row"><span class="label">Huidig schorsingstarief</span><span class="value" id="d-tariff">—</span></div>
+        <div class="result-row"><span class="label">MRB per dag</span><span class="value" id="d-mrb-day">—</span></div>
+        <div class="result-row"><span class="label">MRB per maand (kwartaal/3)</span><span class="value" id="d-mrb-month">—</span></div>
+        <div class="result-row"><span class="label">MRB per jaar</span><span class="value" id="d-mrb-year">—</span></div>
+        <div class="result-row"><span class="label">Datum overgang naar laag tarief (DET + 15 jr)</span><span class="value" id="d-laag-date">—</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== CALC 1 ============== -->
+  <section class="panel" id="panel-calc1" role="tabpanel" aria-labelledby="tab-calc1" aria-hidden="true">
+    <div class="card">
+      <h2>1. Wanneer kan ik weer ontschorsen?</h2>
+      <p>De wettelijke minimumduur is één kalendermaand plus één dag.</p>
+
+      <div class="field">
+        <label for="c1-date">Geplande schorsingsdatum</label>
+        <input type="text" id="c1-date" inputmode="numeric" placeholder="dd/mm/jjjj" maxlength="10" autocomplete="off" />
+        <span class="hint">Schorsing gaat direct in op de aanvraagdatum. Een datum in het verleden is niet toegestaan.</span>
+      </div>
+
+      <div id="c1-result" class="result empty">Vul een schorsingsdatum in om de berekening te zien.</div>
+    </div>
+  </section>
+
+  <!-- ============== CALC 2 ============== -->
+  <section class="panel" id="panel-calc2" role="tabpanel" aria-labelledby="tab-calc2" aria-hidden="true">
+    <div class="card">
+      <h2>2. Loont schorsen tussen twee vakanties?</h2>
+      <p>Vul de einddatum van vakantie 1 (camper komt thuis) en de begindatum van vakantie 2 in.</p>
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="c2-end">Einddatum vakantie 1</label>
+          <input type="text" id="c2-end" inputmode="numeric" placeholder="dd/mm/jjjj" maxlength="10" autocomplete="off" />
+          <span class="hint">Camper kan vanaf deze datum geschorst worden.</span>
+        </div>
+        <div class="field">
+          <label for="c2-start">Begindatum vakantie 2</label>
+          <input type="text" id="c2-start" inputmode="numeric" placeholder="dd/mm/jjjj" maxlength="10" autocomplete="off" />
+          <span class="hint">Camper moet hierop ontschorst en gebruiksklaar zijn.</span>
+        </div>
+      </div>
+
+      <div id="c2-result" class="result empty">Vul beide datums in om het advies te zien.</div>
+    </div>
+  </section>
+
+  <!-- ============== CALC 3 ============== -->
+  <section class="panel" id="panel-calc3" role="tabpanel" aria-labelledby="tab-calc3" aria-hidden="true">
+    <div class="card">
+      <h2>3. Jaarplanning</h2>
+      <p>Voer al uw geplande vakantieperiodes in. We berekenen voor elk gat of schorsen rendabel is en tonen de totaalbesparing.</p>
+
+      <div class="field">
+        <label for="c3-year-start">Startdatum rekenjaar</label>
+        <input type="text" id="c3-year-start" inputmode="numeric" placeholder="dd/mm/jjjj" maxlength="10" autocomplete="off" />
+        <span class="hint">Standaard 1 januari van het komende jaar.</span>
+      </div>
+
+      <div id="c3-vacations" aria-label="Lijst van vakanties"></div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <button type="button" class="btn btn-secondary" id="c3-add">+ Vakantie toevoegen</button>
+        <button type="button" class="btn btn-accent" id="c3-save">Jaarplanning opslaan</button>
+        <span id="c3-saved-msg" style="align-self:center;color:var(--color-good);font-size:.85rem;" aria-live="polite"></span>
+      </div>
+
+      <div id="c3-result" class="result empty" style="margin-top:16px;">Voeg vakanties toe om de planning te zien.</div>
+    </div>
+  </section>
+
+  <!-- ============== CALC 4 ============== -->
+  <section class="panel" id="panel-calc4" role="tabpanel" aria-labelledby="tab-calc4" aria-hidden="true">
+    <div class="card">
+      <h2>4. Lange-termijn schorsing — kostenoptimum</h2>
+      <p>Voor situaties waarin de camper meer dan een jaar stilstaat (verkoopproces, langdurig buitenlandverblijf).</p>
+
+      <div class="field">
+        <label for="c4-months">Geplande totale schorsingsduur (maanden)</label>
+        <input type="number" id="c4-months" min="1" max="120" step="1" placeholder="bijv. 18" />
+      </div>
+
+      <div id="c4-result" class="result empty">Vul een aantal maanden in om de opties te vergelijken.</div>
+    </div>
+  </section>
+
+  <!-- ============== HELP ============== -->
+  <section class="panel" id="panel-help" role="tabpanel" aria-labelledby="tab-help" aria-hidden="true">
+    <div class="card help-block">
+      <h2>Regels &amp; uitleg</h2>
+
+      <h3>Minimum schorsingsduur</h3>
+      <p>Schorsing gaat direct in op de aanvraagdatum. De vroegste ontschorsingsdatum is één kalendermaand plus één dag later. Eerder ontschorsen leidt tot volledige MRB-naheffing en u krijgt de schorsingskosten niet terug.</p>
+
+      <h3>RDW-tarieven 2026</h3>
+      <ul>
+        <li><strong>Hoog tarief</strong> — personenauto-kenteken (M1) én jonger dan 15 jaar én ≤3500 kg: aanvraag 1 jaar €88,05; verlenging per jaar €29,10.</li>
+        <li><strong>Laag tarief</strong> — bedrijfsauto-kenteken (N) óf 15 jaar of ouder óf zwaarder dan 3500 kg: €29,10 zowel aanvraag als verlenging.</li>
+      </ul>
+
+      <h3>Schorsingsperiode</h3>
+      <p>Bij aanvraag kiest u 1, 2 of 3 jaar. Geld terug bij eerder stoppen is niet mogelijk. U kunt onbeperkt vaak schorsen, maar elke aanvraag kost het volle aanvraagtarief.</p>
+
+      <h3>MRB-mechaniek</h3>
+      <p>MRB stopt automatisch bij schorsing. Vooruitbetaalde MRB van het lopende kwartaal komt automatisch terug (bedragen onder €5 niet). Bij ontschorsing start MRB direct opnieuw, in dezelfde betaalmethode als ervoor. MRB wordt per dag berekend (kwartaalbedrag / 91,25).</p>
+
+      <h3>Verzekering en APK</h3>
+      <p>Tijdens schorsing zijn WA-verzekering en APK niet verplicht. Veel verzekeraars (zoals NKC, Camperverzekerd) staan tijdelijk royeren echter niet toe; advies is WA + beperkt casco aan te houden. Bij ontschorsing moet de APK geldig zijn vóór gebruik op de openbare weg. Een geschorste camper mag niet op de openbare weg staan of rijden — privéterrein is verplicht. Handhaving via ANPR-camera's is aangescherpt.</p>
+
+      <h3>Wat zit er <em>niet</em> in deze rekentool?</h3>
+      <ul>
+        <li>BPM, fijnstoftoeslag en provinciale opcenten — deze zitten al in het door u ingevoerde MRB-bedrag.</li>
+        <li>Verzekeringskosten-vergelijking en APK-planning.</li>
+        <li>Daadwerkelijke koppeling met RDW of DigiD.</li>
+      </ul>
+
+      <h3>Bronnen</h3>
+      <ul>
+        <li>RDW: rdw.nl/schorsen/schorsing-aanvragen</li>
+        <li>Belastingdienst: belastingdienst.nl → Motorrijtuigenbelasting → Een motorrijtuig schorsen</li>
+        <li>NKC: nkc.nl/artikel/camper-schorsen</li>
+      </ul>
+
+      <h3>Datumberekening — zelftest</h3>
+      <p><small>Zichtbare verificatie van de "+1 maand +1 dag"-functie tegen de testgevallen uit de spec.</small></p>
+      <pre id="test-results" aria-live="polite">Klik om te draaien…</pre>
+      <button type="button" class="btn btn-secondary" id="run-tests">Tests opnieuw draaien</button>
+    </div>
+  </section>
+</main>
+
+<script>
+'use strict';
+
+/* =========================================================
+   CONSTANTS — RDW tarieven 2026
+   ========================================================= */
+const RDW_TARIEVEN_2026 = {
+  hoog: { aanvraag1jaar: 88.05, verlenging: 29.10 },
+  laag: { aanvraag1jaar: 29.10, verlenging: 29.10 },
+};
+const MRB_DAGEN_PER_KWARTAAL = 91.25;
+const KWARTALEN_PER_JAAR = 4;
+const TARIEF_GRENS_LEEFTIJD_JAREN = 15;
+const TARIEF_GRENS_GEWICHT_KG = 3500;
+
+const MS_PER_DAY = 86400000;
+
+/* =========================================================
+   STORAGE — window.storage with localStorage fallback
+   ========================================================= */
+const storage = {
+  async get(key) {
+    try {
+      if (typeof window !== 'undefined' && window.storage && typeof window.storage.get === 'function') {
+        return await window.storage.get(key);
+      }
+    } catch (e) { /* fall through */ }
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  },
+  async set(key, value) {
+    try {
+      if (typeof window !== 'undefined' && window.storage && typeof window.storage.set === 'function') {
+        return await window.storage.set(key, value);
+      }
+    } catch (e) { /* fall through */ }
+    try { localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+  },
+};
+
+/* =========================================================
+   FORMATTERS
+   ========================================================= */
+const fmtEUR = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
+
+function formatEUR(n) {
+  if (!isFinite(n)) return '—';
+  return fmtEUR.format(n);
+}
+// Europese notatie dd/mm/yyyy
+function formatDate(d) {
+  if (!(d instanceof Date) || isNaN(d)) return '—';
+  const day = String(d.getDate()).padStart(2, '0');
+  const mo  = String(d.getMonth() + 1).padStart(2, '0');
+  const yr  = d.getFullYear();
+  return `${day}/${mo}/${yr}`;
+}
+// Langere variant gebruikt dezelfde notatie voor consistentie
+function formatDateLong(d) {
+  return formatDate(d);
+}
+
+/* =========================================================
+   DATE UTILITIES
+   ========================================================= */
+function parseISO(value) {
+  if (!value) return null;
+  const [y, m, d] = value.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const dt = new Date(y, m - 1, d);
+  if (isNaN(dt)) return null;
+  return dt;
+}
+function toISO(d) {
+  if (!(d instanceof Date) || isNaN(d)) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Parse a string in dd/mm/yyyy format (also accepts dd-mm-yyyy and ISO yyyy-mm-dd as fallbacks).
+ * Returns null if the value is incomplete or invalid.
+ */
+function parseDateInput(value) {
+  if (!value) return null;
+  const v = String(value).trim();
+  // ISO yyyy-mm-dd (4-2-2)
+  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) {
+    const [, y, mo, d] = m;
+    return makeValidDate(+y, +mo, +d);
+  }
+  // dd/mm/yyyy or dd-mm-yyyy (1-2 / 1-2 / 4)
+  m = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) {
+    const [, d, mo, y] = m;
+    return makeValidDate(+y, +mo, +d);
+  }
+  return null;
+}
+function makeValidDate(y, m, d) {
+  if (!y || !m || !d) return null;
+  if (m < 1 || m > 12) return null;
+  if (d < 1 || d > 31) return null;
+  const dt = new Date(y, m - 1, d);
+  // verify the components round-tripped (rejects e.g. 31-02)
+  if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+  return dt;
+}
+function formatDateInput(d) {
+  if (!(d instanceof Date) || isNaN(d)) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const mo  = String(d.getMonth() + 1).padStart(2, '0');
+  const yr  = d.getFullYear();
+  return `${day}/${mo}/${yr}`;
+}
+/**
+ * Live mask: while typing, insert / after the 2nd and 4th digit so 22032026 -> 22/03/2026.
+ */
+function attachDateMask(el) {
+  el.addEventListener('input', (e) => {
+    const start = el.selectionStart;
+    const before = el.value;
+    let digits = before.replace(/\D/g, '').slice(0, 8);
+    let out = digits;
+    if (digits.length > 4) out = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
+    else if (digits.length > 2) out = digits.slice(0, 2) + '/' + digits.slice(2);
+    if (out !== before) {
+      el.value = out;
+      // Cursor naar einde — eenvoudig en in de praktijk prettig genoeg.
+      try { el.setSelectionRange(out.length, out.length); } catch (_) {}
+    }
+  });
+}
+function startOfDay(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function daysBetween(a, b) {
+  return Math.round((startOfDay(b) - startOfDay(a)) / MS_PER_DAY);
+}
+function addYears(d, n) {
+  return new Date(d.getFullYear() + n, d.getMonth(), d.getDate());
+}
+function addDays(d, n) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+
+/**
+ * Vroegste toegestane ontschorsingsdatum.
+ * Spec: schorsdatum + 1 kalendermaand + 1 dag.
+ * Als de "zelfde dag volgende maand" niet bestaat (bv. 31 januari → 31 februari),
+ * dan: laatste dag van de bedoelde maand + 1 dag.
+ */
+function earliestUnschor(schorsDate) {
+  const y = schorsDate.getFullYear();
+  const m = schorsDate.getMonth();
+  const d = schorsDate.getDate();
+
+  // Stap 1: probeer zelfde dag volgende maand
+  let target = new Date(y, m + 1, d);
+  // Bij overflow valt JS terug naar volgende maand (bv. 31 jan → 3 mrt).
+  if (target.getMonth() !== ((m + 1) % 12)) {
+    // pak laatste dag van de bedoelde maand (m+1)
+    target = new Date(y, m + 2, 0);
+  }
+  // Stap 2: tel 1 dag op
+  target.setDate(target.getDate() + 1);
+  return target;
+}
+
+/* =========================================================
+   PROFILE — tarief & afgeleide waarden
+   ========================================================= */
+function computeTariff(profile, refDate = new Date()) {
+  if (!profile || !profile.det) return null;
+  const det = parseISO(profile.det);
+  if (!det) return null;
+
+  const isN = profile.reg === 'N';
+  const isHeavy = Number(profile.mass) > TARIEF_GRENS_GEWICHT_KG;
+  const ageThreshold = addYears(det, TARIEF_GRENS_LEEFTIJD_JAREN);
+  const isOld = ageThreshold <= startOfDay(refDate);
+
+  const isLaag = isN || isHeavy || isOld;
+  return isLaag ? 'laag' : 'hoog';
+}
+
+function getCostsForTariff(tariff) {
+  return RDW_TARIEVEN_2026[tariff] || RDW_TARIEVEN_2026.hoog;
+}
+
+function mrbPerDay(profile) {
+  const q = Number(profile?.mrbPerKwartaal);
+  if (!q || !isFinite(q)) return 0;
+  return q / MRB_DAGEN_PER_KWARTAAL;
+}
+
+/* =========================================================
+   APP STATE
+   ========================================================= */
+const app = {
+  profile: null,           // { label, det, reg, mass, mrbPerKwartaal }
+  c3: { yearStart: null, vacations: [] },
+};
+
+/* =========================================================
+   TAB NAVIGATION
+   ========================================================= */
+function initTabs() {
+  const tabs = document.querySelectorAll('nav.tabs button[role="tab"]');
+  const panels = document.querySelectorAll('section.panel');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => activateTab(tab.id));
+    tab.addEventListener('keydown', (e) => {
+      const list = Array.from(tabs);
+      const i = list.indexOf(tab);
+      if (e.key === 'ArrowRight') { list[(i + 1) % list.length].focus(); e.preventDefault(); }
+      if (e.key === 'ArrowLeft')  { list[(i - 1 + list.length) % list.length].focus(); e.preventDefault(); }
+    });
+  });
+
+  function activateTab(tabId) {
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.id === tabId)));
+    const targetPanelId = document.getElementById(tabId).getAttribute('aria-controls');
+    panels.forEach(p => p.setAttribute('aria-hidden', String(p.id !== targetPanelId)));
+  }
+}
+
+/* =========================================================
+   PROFILE UI
+   ========================================================= */
+async function initProfile() {
+  const labelEl = document.getElementById('profile-label');
+  const detEl   = document.getElementById('profile-det');
+  const massEl  = document.getElementById('profile-mass');
+  const mrbEl   = document.getElementById('profile-mrb');
+  const saveBtn = document.getElementById('profile-save');
+  const savedMsg = document.getElementById('profile-saved-msg');
+
+  attachDateMask(detEl);
+
+  // load
+  const raw = await storage.get('profile');
+  if (raw) {
+    try {
+      const p = JSON.parse(raw);
+      app.profile = p;
+      labelEl.value = p.label || '';
+      // p.det is ISO yyyy-mm-dd in storage; toon als dd/mm/yyyy
+      detEl.value   = p.det ? formatDateInput(parseISO(p.det) || parseDateInput(p.det)) : '';
+      massEl.value  = (p.mass ?? '').toString();
+      mrbEl.value   = (p.mrbPerKwartaal ?? '').toString();
+      const reg = p.reg || 'M1';
+      const radio = document.querySelector(`input[name="profile-reg"][value="${reg}"]`);
+      if (radio) radio.checked = true;
+    } catch (e) { /* ignore */ }
+  }
+
+  function readForm() {
+    const reg = (document.querySelector('input[name="profile-reg"]:checked') || {}).value || 'M1';
+    const detDate = parseDateInput(detEl.value);
+    return {
+      label: labelEl.value.trim(),
+      det:   detDate ? toISO(detDate) : null,  // intern: ISO formaat
+      mass:  Number(massEl.value) || null,
+      mrbPerKwartaal: Number(mrbEl.value) || null,
+      reg,
+    };
+  }
+
+  function refresh() {
+    app.profile = readForm();
+    renderDerived();
+    // also refresh dependent calcs
+    renderCalc1();
+    renderCalc2();
+    renderCalc3Result();
+    renderCalc4();
+  }
+
+  [labelEl, detEl, massEl, mrbEl].forEach(el => el.addEventListener('input', refresh));
+  document.querySelectorAll('input[name="profile-reg"]').forEach(el => el.addEventListener('change', refresh));
+
+  saveBtn.addEventListener('click', async () => {
+    const p = readForm();
+    if (!p.det || !p.mass || !p.mrbPerKwartaal) {
+      savedMsg.textContent = 'Vul DET, gewicht en MRB-bedrag in.';
+      savedMsg.style.color = 'var(--color-bad)';
+      return;
+    }
+    await storage.set('profile', JSON.stringify(p));
+    app.profile = p;
+    savedMsg.textContent = 'Opgeslagen.';
+    savedMsg.style.color = 'var(--color-good)';
+    setTimeout(() => { savedMsg.textContent = ''; }, 2500);
+  });
+
+  refresh();
+}
+
+function renderDerived() {
+  const p = app.profile;
+  const tariff = computeTariff(p);
+  const tariffEl = document.getElementById('d-tariff');
+  const dayEl    = document.getElementById('d-mrb-day');
+  const monthEl  = document.getElementById('d-mrb-month');
+  const yearEl   = document.getElementById('d-mrb-year');
+  const laagEl   = document.getElementById('d-laag-date');
+
+  if (!p || !tariff) {
+    tariffEl.textContent = '—';
+    dayEl.textContent = '—';
+    monthEl.textContent = '—';
+    yearEl.textContent = '—';
+    laagEl.textContent = '—';
+    return;
+  }
+
+  const badge = `<span class="tariff-badge ${tariff === 'laag' ? 'laag' : ''}">${tariff === 'laag' ? 'laag' : 'hoog'}</span>`;
+  tariffEl.innerHTML = `${badge} <span style="margin-left:6px">aanvraag 1 jaar ${formatEUR(getCostsForTariff(tariff).aanvraag1jaar)}</span>`;
+
+  const q = Number(p.mrbPerKwartaal) || 0;
+  dayEl.textContent   = formatEUR(q / MRB_DAGEN_PER_KWARTAAL);
+  monthEl.textContent = formatEUR(q / 3);
+  yearEl.textContent  = formatEUR(q * KWARTALEN_PER_JAAR);
+
+  // overgang naar laag tarief
+  const det = parseISO(p.det);
+  if (det) {
+    const laagDate = addYears(det, TARIEF_GRENS_LEEFTIJD_JAREN);
+    if (laagDate <= startOfDay(new Date())) {
+      laagEl.textContent = 'reeds bereikt';
+    } else {
+      laagEl.textContent = formatDate(laagDate);
+    }
+  } else {
+    laagEl.textContent = '—';
+  }
+}
+
+/* =========================================================
+   CALC 1
+   ========================================================= */
+function initCalc1() {
+  const dateEl = document.getElementById('c1-date');
+  attachDateMask(dateEl);
+  // default: vandaag
+  dateEl.value = formatDateInput(new Date());
+  dateEl.addEventListener('input', renderCalc1);
+  renderCalc1();
+}
+
+function renderCalc1() {
+  const dateEl = document.getElementById('c1-date');
+  const out = document.getElementById('c1-result');
+  const date = parseDateInput(dateEl.value);
+
+  if (!date) {
+    out.className = 'result empty';
+    out.textContent = 'Vul een schorsingsdatum in om de berekening te zien.';
+    return;
+  }
+
+  const today = startOfDay(new Date());
+  if (date < today) {
+    out.className = 'result';
+    out.innerHTML = `<div class="banner bad"><span class="status-tag">⚠️ ongeldig</span>Schorsing kan niet in het verleden ingaan. Schorsing gaat altijd direct in op de aanvraagdatum.</div>`;
+    return;
+  }
+
+  const earliest = earliestUnschor(date);
+  const days = daysBetween(date, earliest);
+
+  const p = app.profile;
+  const tariff = computeTariff(p, date);
+
+  let costsHtml = '';
+  let safetyHtml = '';
+  if (p && tariff) {
+    const dayMRB = mrbPerDay(p);
+    const gross = dayMRB * days;
+    const cost  = getCostsForTariff(tariff).aanvraag1jaar;
+    const net   = gross - cost;
+
+    costsHtml = `
+      <hr/>
+      <div class="result-row"><span class="label">Bruto MRB-besparing (${days} dagen)</span><span class="value">${formatEUR(gross)}</span></div>
+      <div class="result-row"><span class="label">Schorsingskosten (${tariff} tarief, aanvraag 1 jr)</span><span class="value">${formatEUR(cost)}</span></div>
+      <div class="result-row"><span class="label"><strong>Netto besparing bij minimumduur</strong></span><span class="value"><strong>${formatEUR(net)}</strong></span></div>
+    `;
+    if (net < 0) {
+      safetyHtml = `<div class="banner bad" style="margin-top:8px"><span class="status-tag">⚠️ let op</span>Netto besparing is negatief — de minimumduur dekt niet de schorsingskosten. Schorsen loont hier niet.</div>`;
+    }
+  } else {
+    costsHtml = `<hr/><p><small>Vul het profiel in voor een kostenbesparingsberekening.</small></p>`;
+  }
+
+  out.className = 'result';
+  out.innerHTML = `
+    <div class="result-headline big">Vroegst toegestane ontschorsing: ${formatDateLong(earliest)}</div>
+    <div class="result-row"><span class="label">Schorsingsdatum</span><span class="value">${formatDate(date)}</span></div>
+    <div class="result-row"><span class="label">Aantal dagen schorsing (minimum)</span><span class="value">${days}</span></div>
+    ${costsHtml}
+    ${safetyHtml}
+  `;
+}
+
+/* =========================================================
+   CALC 2
+   ========================================================= */
+function initCalc2() {
+  const endEl = document.getElementById('c2-end');
+  const startEl = document.getElementById('c2-start');
+  attachDateMask(endEl);
+  attachDateMask(startEl);
+  endEl.addEventListener('input', renderCalc2);
+  startEl.addEventListener('input', renderCalc2);
+  renderCalc2();
+}
+
+function evaluateGap(suspendDate, unsuspendDeadline, profile) {
+  // suspendDate = einde vakantie 1 (vroegste schorsmoment)
+  // unsuspendDeadline = begin vakantie 2 (uiterlijke ontschorsdatum)
+  const earliest = earliestUnschor(suspendDate);
+  const margeDays = daysBetween(earliest, unsuspendDeadline);
+  const totalGapDays = daysBetween(suspendDate, unsuspendDeadline);
+
+  let scenario;
+  if (totalGapDays <= 0) {
+    scenario = 'invalid';
+  } else if (margeDays < 0) {
+    scenario = 'impossible';
+  } else if (margeDays <= 3) {
+    scenario = 'tight';
+  } else {
+    scenario = 'comfortable';
+  }
+
+  let gross = 0, cost = 0, net = 0, tariff = null;
+  if (profile && profile.det && profile.mrbPerKwartaal) {
+    tariff = computeTariff(profile, suspendDate);
+    if (tariff && totalGapDays > 0) {
+      gross = mrbPerDay(profile) * totalGapDays;
+      cost  = getCostsForTariff(tariff).aanvraag1jaar;
+      net   = gross - cost;
+    }
+  }
+
+  return { scenario, suspendDate, unsuspendDate: unsuspendDeadline, earliest, margeDays, totalGapDays, gross, cost, net, tariff };
+}
+
+function renderTimeline(vac1End, vac2Start, suspendDate, unsuspendDate) {
+  // segmenten: vac1 (week ervoor) | active-buffer | suspended | active-buffer | vac2 (week erna)
+  // We tonen [voor-buffer 7 dagen] [vac1End] [active] [suspended] [active] [vac2Start] [na-buffer 7 dagen]
+  const total = daysBetween(addDays(vac1End, -3), addDays(vac2Start, 3));
+  const preActive = daysBetween(vac1End, suspendDate);
+  const suspendedDays = daysBetween(suspendDate, unsuspendDate);
+  const postActive = daysBetween(unsuspendDate, vac2Start);
+
+  const widths = {
+    preBuf: 3,
+    preActive: Math.max(0, preActive),
+    suspended: Math.max(0, suspendedDays),
+    postActive: Math.max(0, postActive),
+    postBuf: 3,
+  };
+  const sum = widths.preBuf + widths.preActive + widths.suspended + widths.postActive + widths.postBuf;
+  const pct = (n) => sum > 0 ? `${(n / sum * 100).toFixed(2)}%` : '0';
+
+  return `
+    <div class="timeline" role="img" aria-label="Tijdlijn van vakantie 1 naar vakantie 2 met schorsingsperiode">
+      <div class="timeline-dates">
+        <span>${formatDate(vac1End)}</span>
+        <span>${formatDate(vac2Start)}</span>
+      </div>
+      <div class="timeline-bar">
+        <div class="seg vacation"  style="flex-basis:${pct(widths.preBuf)}" title="vakantie 1">vac. 1</div>
+        ${widths.preActive  > 0 ? `<div class="seg active"    style="flex-basis:${pct(widths.preActive)}"  title="actief"></div>` : ''}
+        ${widths.suspended  > 0 ? `<div class="seg suspended" style="flex-basis:${pct(widths.suspended)}" title="geschorst">geschorst (${widths.suspended}d)</div>` : ''}
+        ${widths.postActive > 0 ? `<div class="seg active"    style="flex-basis:${pct(widths.postActive)}" title="actief"></div>` : ''}
+        <div class="seg vacation"  style="flex-basis:${pct(widths.postBuf)}" title="vakantie 2">vac. 2</div>
+      </div>
+      <div class="timeline-legend">
+        <span><span class="swatch" style="background:var(--color-vacation)"></span>vakantie</span>
+        <span><span class="swatch" style="background:var(--color-suspended)"></span>geschorst</span>
+        <span><span class="swatch" style="background:var(--color-active)"></span>MRB actief</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderCalc2() {
+  const endEl = document.getElementById('c2-end');
+  const startEl = document.getElementById('c2-start');
+  const out = document.getElementById('c2-result');
+  const v1End = parseDateInput(endEl.value);
+  const v2Start = parseDateInput(startEl.value);
+
+  if (!v1End || !v2Start) {
+    out.className = 'result empty';
+    out.textContent = 'Vul beide datums in om het advies te zien.';
+    return;
+  }
+  if (v2Start <= v1End) {
+    out.className = 'result';
+    out.innerHTML = `<div class="banner bad"><span class="status-tag">⚠️ ongeldig</span>Begindatum vakantie 2 moet na einddatum vakantie 1 liggen.</div>`;
+    return;
+  }
+
+  const r = evaluateGap(v1End, v2Start, app.profile);
+  let banner, body;
+
+  if (r.scenario === 'impossible') {
+    banner = `<div class="banner bad"><span class="status-tag">kan niet schorsen</span>De vroegste ontschorsingsdatum (${formatDate(r.earliest)}) ligt ná het begin van vakantie 2. Schorsen zou MRB-naheffing opleveren — laat de MRB doorlopen.</div>`;
+    body = `
+      <div class="result-row"><span class="label">Stilstandsdagen tussen vakanties</span><span class="value">${r.totalGapDays}</span></div>
+      <div class="result-row"><span class="label">Vroegst toegestane ontschorsing</span><span class="value">${formatDate(r.earliest)}</span></div>
+      <div class="result-row"><span class="label">Marge tot vakantie 2</span><span class="value">${r.margeDays} dagen (negatief)</span></div>
+    `;
+  } else {
+    const sc = r.scenario;
+    const tag = sc === 'tight'
+      ? `<span class="status-tag">krap</span>Schorsen kan, maar de marge is klein. Overweeg een paar dagen eerder te schorsen voor extra zekerheid.`
+      : `<span class="status-tag">kan schorsen</span>Het schorsingsvenster ligt ruim voor vakantie 2.`;
+    banner = `<div class="banner ${sc === 'tight' ? 'warn' : 'good'}">${tag}</div>`;
+
+    const tariffBadge = r.tariff
+      ? `<span class="tariff-badge ${r.tariff === 'laag' ? 'laag' : ''}">${r.tariff}</span>`
+      : '<small>(profiel onvolledig)</small>';
+
+    body = `
+      <div class="result-headline">Aanbevolen: ${formatDate(r.suspendDate)} → ${formatDate(r.unsuspendDate)}</div>
+      <div class="result-row"><span class="label">Schorsingsdatum</span><span class="value">${formatDate(r.suspendDate)}</span></div>
+      <div class="result-row"><span class="label">Ontschorsingsdatum</span><span class="value">${formatDate(r.unsuspendDate)}</span></div>
+      <div class="result-row"><span class="label">Vroegst toegestane ontschorsing</span><span class="value">${formatDate(r.earliest)}</span></div>
+      <div class="result-row"><span class="label">Effectieve schorsingsperiode</span><span class="value">${r.totalGapDays} dagen</span></div>
+      <div class="result-row"><span class="label">Marge t.o.v. minimum</span><span class="value">${r.margeDays} dagen</span></div>
+      ${app.profile && app.profile.mrbPerKwartaal ? `
+        <hr/>
+        <div class="result-row"><span class="label">Tarief</span><span class="value">${tariffBadge}</span></div>
+        <div class="result-row"><span class="label">Bruto MRB-besparing</span><span class="value">${formatEUR(r.gross)}</span></div>
+        <div class="result-row"><span class="label">Schorsingskosten</span><span class="value">${formatEUR(r.cost)}</span></div>
+        <div class="result-row"><span class="label"><strong>Netto besparing</strong></span><span class="value"><strong>${formatEUR(r.net)}</strong></span></div>
+      ` : `<hr/><p><small>Vul het profiel in voor een kostenbesparingsberekening.</small></p>`}
+      ${renderTimeline(v1End, v2Start, r.suspendDate, r.unsuspendDate)}
+    `;
+  }
+
+  out.className = 'result';
+  out.innerHTML = banner + body;
+}
+
+/* =========================================================
+   CALC 3 — JAARPLANNING
+   ========================================================= */
+async function initCalc3() {
+  // jaar bepalen: komend jaar 1 januari
+  const yearStartEl = document.getElementById('c3-year-start');
+  attachDateMask(yearStartEl);
+  const today = new Date();
+  const defaultYearStart = new Date(today.getFullYear() + 1, 0, 1);
+  const currentYearStart = new Date(today.getFullYear(), 0, 1);
+  // als komend jaar nog ver weg is en we zitten in januari, gebruik huidig jaar
+  const initialYearStart = today.getMonth() === 0 ? currentYearStart : defaultYearStart;
+  yearStartEl.value = formatDateInput(initialYearStart);
+  app.c3.yearStart = toISO(initialYearStart); // intern: ISO
+
+  // load saved
+  const savedKey = `vacations:${initialYearStart.getFullYear()}`;
+  const raw = await storage.get(savedKey);
+  if (raw) {
+    try {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) app.c3.vacations = list;
+    } catch (e) {}
+  }
+  if (app.c3.vacations.length === 0) {
+    // start with 1 empty entry
+    app.c3.vacations = [{ start: '', end: '' }];
+  }
+
+  yearStartEl.addEventListener('input', () => {
+    const dt = parseDateInput(yearStartEl.value);
+    app.c3.yearStart = dt ? toISO(dt) : '';
+    renderCalc3Result();
+  });
+
+  document.getElementById('c3-add').addEventListener('click', () => {
+    app.c3.vacations.push({ start: '', end: '' });
+    renderCalc3List();
+    renderCalc3Result();
+  });
+
+  document.getElementById('c3-save').addEventListener('click', async () => {
+    const ys = parseISO(app.c3.yearStart) || parseDateInput(app.c3.yearStart);
+    if (!ys) return;
+    const key = `vacations:${ys.getFullYear()}`;
+    await storage.set(key, JSON.stringify(app.c3.vacations));
+    const msg = document.getElementById('c3-saved-msg');
+    msg.textContent = 'Opgeslagen.';
+    setTimeout(() => msg.textContent = '', 2500);
+  });
+
+  renderCalc3List();
+  renderCalc3Result();
+}
+
+function renderCalc3List() {
+  const wrap = document.getElementById('c3-vacations');
+  wrap.innerHTML = '';
+  app.c3.vacations.forEach((v, idx) => {
+    const row = document.createElement('div');
+    row.className = 'vacation-row';
+    const startDisplay = v.start ? formatDateInput(parseISO(v.start) || parseDateInput(v.start)) : '';
+    const endDisplay   = v.end   ? formatDateInput(parseISO(v.end)   || parseDateInput(v.end))   : '';
+    row.innerHTML = `
+      <div class="field" style="margin-bottom:0">
+        <label for="c3-v-${idx}-start">Vakantie ${idx + 1} — begin</label>
+        <input type="text" id="c3-v-${idx}-start" inputmode="numeric" placeholder="dd/mm/jjjj" maxlength="10" autocomplete="off" value="${startDisplay}" />
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label for="c3-v-${idx}-end">Vakantie ${idx + 1} — einde</label>
+        <input type="text" id="c3-v-${idx}-end" inputmode="numeric" placeholder="dd/mm/jjjj" maxlength="10" autocomplete="off" value="${endDisplay}" />
+      </div>
+      <button type="button" class="btn-icon remove-btn" aria-label="Verwijder vakantie ${idx + 1}" data-idx="${idx}">– verwijder</button>
+    `;
+    wrap.appendChild(row);
+  });
+
+  // wire up
+  app.c3.vacations.forEach((v, idx) => {
+    const startEl = document.getElementById(`c3-v-${idx}-start`);
+    const endEl   = document.getElementById(`c3-v-${idx}-end`);
+    attachDateMask(startEl);
+    attachDateMask(endEl);
+    startEl.addEventListener('input', () => {
+      const dt = parseDateInput(startEl.value);
+      app.c3.vacations[idx].start = dt ? toISO(dt) : '';
+      renderCalc3Result();
+    });
+    endEl.addEventListener('input', () => {
+      const dt = parseDateInput(endEl.value);
+      app.c3.vacations[idx].end = dt ? toISO(dt) : '';
+      renderCalc3Result();
+    });
+  });
+  wrap.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.idx);
+      app.c3.vacations.splice(idx, 1);
+      if (app.c3.vacations.length === 0) app.c3.vacations.push({ start: '', end: '' });
+      renderCalc3List();
+      renderCalc3Result();
+    });
+  });
+}
+
+function renderCalc3Result() {
+  const out = document.getElementById('c3-result');
+  if (!out) return;
+
+  const yearStart = parseISO(app.c3.yearStart) || parseDateInput(app.c3.yearStart);
+  if (!yearStart) {
+    out.className = 'result empty';
+    out.textContent = 'Selecteer eerst een startdatum van het rekenjaar.';
+    return;
+  }
+  const yearEnd = new Date(yearStart.getFullYear() + 1, yearStart.getMonth(), yearStart.getDate());
+
+  // valideer en normaliseer vakanties
+  const vacs = [];
+  let error = null;
+  for (const v of app.c3.vacations) {
+    if (!v.start || !v.end) continue;
+    const s = parseISO(v.start) || parseDateInput(v.start);
+    const e = parseISO(v.end)   || parseDateInput(v.end);
+    if (!s || !e) continue;
+    if (e < s) { error = 'Een vakantie heeft een einddatum vóór de begindatum.'; continue; }
+    vacs.push({ start: s, end: e });
+  }
+  if (vacs.length === 0) {
+    out.className = 'result empty';
+    out.textContent = 'Voeg vakanties toe om de planning te zien.';
+    return;
+  }
+  vacs.sort((a, b) => a.start - b.start);
+
+  // overlap-check
+  for (let i = 1; i < vacs.length; i++) {
+    if (vacs[i].start <= vacs[i - 1].end) {
+      error = `Vakantieperiodes overlappen elkaar (${formatDate(vacs[i - 1].start)}–${formatDate(vacs[i - 1].end)} en ${formatDate(vacs[i].start)}–${formatDate(vacs[i].end)}).`;
+    }
+  }
+
+  // bereken gaps
+  // gap voor de eerste vakantie (van jaarstart tot eerste vakantie)
+  // gap tussen vakanties
+  // gap na laatste vakantie (tot jaareinde)
+  const gaps = [];
+  // before first
+  if (vacs[0].start > yearStart) {
+    gaps.push({ from: yearStart, to: vacs[0].start, kind: 'first' });
+  }
+  for (let i = 0; i < vacs.length - 1; i++) {
+    gaps.push({ from: vacs[i].end, to: vacs[i + 1].start, kind: 'between' });
+  }
+  // after last
+  if (vacs[vacs.length - 1].end < yearEnd) {
+    gaps.push({ from: vacs[vacs.length - 1].end, to: yearEnd, kind: 'last' });
+  }
+
+  // for each gap: evaluate suspension
+  const profile = app.profile;
+  const dayMRB = mrbPerDay(profile);
+  const tariff = computeTariff(profile, yearStart);
+  const cost = tariff ? getCostsForTariff(tariff).aanvraag1jaar : 0;
+
+  const rows = [];
+  let totalSavings = 0;
+  let totalSuspends = 0;
+  const suspensionWindows = []; // for calendar
+
+  for (const g of gaps) {
+    const r = evaluateGap(g.from, g.to, profile);
+    let advise = 'niet schorsen';
+    let net = 0;
+    let suspended = false;
+    if (r.scenario === 'comfortable' || r.scenario === 'tight') {
+      if (r.net > 0) {
+        advise = r.scenario === 'tight' ? 'schorsen (krap)' : 'schorsen';
+        net = r.net;
+        totalSavings += net;
+        totalSuspends++;
+        suspended = true;
+        suspensionWindows.push({ from: r.suspendDate, to: r.unsuspendDate });
+      } else {
+        advise = 'niet schorsen — netto verlies';
+      }
+    } else if (r.scenario === 'impossible') {
+      advise = 'kan niet schorsen';
+    }
+    rows.push({ ...g, ...r, advise, net, suspended });
+  }
+
+  // scenario A vs B
+  const scenarioA_yearMRB = (profile?.mrbPerKwartaal || 0) * KWARTALEN_PER_JAAR;
+  const scenarioB_yearMRB = scenarioA_yearMRB - totalSavings; // approx
+
+  // tabel
+  let tableRows = '';
+  for (const r of rows) {
+    const days = daysBetween(r.from, r.to);
+    const adviceStyle = r.suspended ? 'color:var(--color-good);font-weight:600' : (r.scenario === 'impossible' ? 'color:var(--color-bad)' : 'color:var(--color-text-muted)');
+    tableRows += `
+      <tr>
+        <td>${formatDate(r.from)} – ${formatDate(r.to)}</td>
+        <td class="num">${days}</td>
+        <td style="${adviceStyle}">${r.advise}</td>
+        <td class="num">${profile && profile.mrbPerKwartaal ? formatEUR(r.net) : '—'}</td>
+      </tr>
+    `;
+  }
+
+  const errorBanner = error ? `<div class="banner warn"><span class="status-tag">let op</span>${error}</div>` : '';
+
+  // jaarkalender
+  const calendarHtml = renderYearCalendar(yearStart, yearEnd, vacs, suspensionWindows);
+
+  out.className = 'result';
+  out.innerHTML = `
+    ${errorBanner}
+    <div class="result-headline big">Totaalbesparing: ${profile && profile.mrbPerKwartaal ? formatEUR(totalSavings) : '—'}</div>
+    <div class="result-row"><span class="label">Aantal schorsingstransacties</span><span class="value">${totalSuspends}</span></div>
+    <div class="result-row"><span class="label">Scenario A — niets schorsen (jaarlijkse MRB)</span><span class="value">${profile && profile.mrbPerKwartaal ? formatEUR(scenarioA_yearMRB) : '—'}</span></div>
+    <div class="result-row"><span class="label">Scenario B — optimaal schorsen</span><span class="value">${profile && profile.mrbPerKwartaal ? formatEUR(scenarioB_yearMRB) : '—'}</span></div>
+    <table class="gaps">
+      <thead><tr><th>Periode</th><th class="num">Dagen</th><th>Advies</th><th class="num">Netto effect</th></tr></thead>
+      <tbody>${tableRows || '<tr><td colspan="4"><em>Geen gaten tussen vakanties binnen het rekenjaar.</em></td></tr>'}</tbody>
+    </table>
+    ${calendarHtml}
+  `;
+}
+
+function renderYearCalendar(yearStart, yearEnd, vacations, suspensions) {
+  // toon de 12 maanden vanaf yearStart-maand
+  // per maand: 31 cellen (lege cellen voor niet-bestaande dagen)
+  const startMonth = yearStart.getMonth();
+  const startYear  = yearStart.getFullYear();
+
+  const months = [];
+  for (let i = 0; i < 12; i++) {
+    const yr = startYear + Math.floor((startMonth + i) / 12);
+    const mo = (startMonth + i) % 12;
+    months.push({ y: yr, m: mo });
+  }
+
+  const monthNames = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+
+  function statusForDay(d) {
+    for (const v of vacations) {
+      if (d >= startOfDay(v.start) && d <= startOfDay(v.end)) return 'vacation';
+    }
+    for (const s of suspensions) {
+      if (d >= startOfDay(s.from) && d < startOfDay(s.to)) return 'suspended';
+    }
+    if (d >= startOfDay(yearStart) && d < startOfDay(yearEnd)) return 'active';
+    return 'empty';
+  }
+
+  let rows = '';
+  for (const { y, m } of months) {
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    let cells = '';
+    for (let d = 1; d <= 31; d++) {
+      if (d > lastDay) {
+        cells += `<div class="day-cell empty" aria-hidden="true"></div>`;
+      } else {
+        const date = new Date(y, m, d);
+        const st = statusForDay(date);
+        cells += `<div class="day-cell ${st}" title="${formatDate(date)}: ${st}"></div>`;
+      }
+    }
+    rows += `
+      <div class="month-row">
+        <span class="month-label">${monthNames[m]} ${String(y).slice(-2)}</span>
+        <div class="month-cells">${cells}</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="year-calendar" aria-label="Jaarkalender">
+      ${rows}
+      <div class="timeline-legend" style="padding:8px 4px 4px">
+        <span><span class="swatch" style="background:var(--color-vacation)"></span>vakantie</span>
+        <span><span class="swatch" style="background:var(--color-suspended)"></span>geschorst</span>
+        <span><span class="swatch" style="background:var(--color-active)"></span>MRB actief</span>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   CALC 4 — LANGE-TERMIJN OPTIMUM
+   ========================================================= */
+function initCalc4() {
+  document.getElementById('c4-months').addEventListener('input', renderCalc4);
+  renderCalc4();
+}
+
+function renderCalc4() {
+  const monthsEl = document.getElementById('c4-months');
+  const out = document.getElementById('c4-result');
+  const months = Number(monthsEl.value);
+
+  if (!months || months < 1) {
+    out.className = 'result empty';
+    out.textContent = 'Vul een aantal maanden in om de opties te vergelijken.';
+    return;
+  }
+
+  const profile = app.profile;
+  if (!profile || !profile.det) {
+    out.className = 'result';
+    out.innerHTML = `<div class="banner warn"><span class="status-tag">profiel</span>Vul eerst het camperprofiel in voor een correcte tariefbepaling.</div>`;
+    return;
+  }
+  const tariff = computeTariff(profile);
+  const t = RDW_TARIEVEN_2026[tariff];
+
+  // opties
+  const options = [];
+
+  // 1× 1 jaar (alleen geldig als duur ≤ 12)
+  if (months <= 12) {
+    options.push({
+      label: '1× schorsing 1 jaar (eerder stoppen, geen restitutie)',
+      cost: t.aanvraag1jaar,
+      transactions: 1,
+      coverage: 12,
+      note: months < 12 ? `Camper hoeft maar ${months} maanden te staan, maar u betaalt het volle aanvraagtarief.` : `Past precies binnen 12 maanden.`,
+    });
+  }
+  // 1× 2 jaar (alleen geldig als duur ≤ 24)
+  if (months <= 24) {
+    options.push({
+      label: '1× schorsing 2 jaar',
+      cost: t.aanvraag1jaar + 1 * t.verlenging,
+      transactions: 1,
+      coverage: 24,
+      note: months <= 12 ? 'Onnodig lang voor uw periode.' : `Past binnen 24 maanden.`,
+    });
+  }
+  // 1× 3 jaar (alleen geldig als duur ≤ 36)
+  if (months <= 36) {
+    options.push({
+      label: '1× schorsing 3 jaar',
+      cost: t.aanvraag1jaar + 2 * t.verlenging,
+      transactions: 1,
+      coverage: 36,
+      note: months <= 24 ? 'Onnodig lang voor uw periode.' : `Past binnen 36 maanden.`,
+    });
+  }
+  // meerdere losse 1-jaarsschorsingen
+  const nLosse = Math.ceil(months / 12);
+  options.push({
+    label: `${nLosse}× losse 1-jaarsschorsing achter elkaar`,
+    cost: nLosse * t.aanvraag1jaar,
+    transactions: nLosse,
+    coverage: nLosse * 12,
+    note: nLosse === 1 ? 'Idem aan optie hierboven.' : `${nLosse} aparte aanvragen, elk volle aanvraagprijs.`,
+  });
+
+  // ook: combinatie 3 jaar + losse jaren als > 36
+  if (months > 36) {
+    const remaining = months - 36;
+    const extra = Math.ceil(remaining / 12);
+    const combCost = (t.aanvraag1jaar + 2 * t.verlenging) + extra * t.aanvraag1jaar;
+    options.push({
+      label: `1× 3 jaar + ${extra}× losse 1-jaarsschorsing`,
+      cost: combCost,
+      transactions: 1 + extra,
+      coverage: 36 + extra * 12,
+      note: 'Combinatie voor zeer lange periodes.',
+    });
+    // ook 2× 2 jaar etc als veelvoud
+    const n2 = Math.ceil(months / 24);
+    options.push({
+      label: `${n2}× schorsing 2 jaar`,
+      cost: n2 * (t.aanvraag1jaar + t.verlenging),
+      transactions: n2,
+      coverage: n2 * 24,
+      note: `${n2} aparte aanvragen van 2 jaar.`,
+    });
+  }
+
+  // sorteer en kies aanbeveling = laagste cost waarbij coverage >= months
+  const valid = options.filter(o => o.coverage >= months);
+  valid.sort((a, b) => a.cost - b.cost);
+  const recommended = valid[0];
+
+  // render in originele volgorde
+  options.sort((a, b) => a.cost - b.cost);
+
+  let html = `
+    <div class="result-headline big">Aanbevolen: ${recommended ? recommended.label : '—'}</div>
+    <p><small>Tarief op basis van profiel: <strong>${tariff}</strong>. Aanvraag 1 jaar ${formatEUR(t.aanvraag1jaar)}, verlenging ${formatEUR(t.verlenging)}.</small></p>
+  `;
+
+  for (const opt of options) {
+    const isRec = opt === recommended;
+    html += `
+      <div class="option-card ${isRec ? 'recommended' : ''}">
+        <div>
+          <div class="opt-label">${opt.label}${isRec ? ' <span class="status-tag" style="background:var(--color-good);color:white">aanbevolen</span>' : ''}</div>
+          <small>${opt.note} Dekt ${opt.coverage} maanden, ${opt.transactions} aanvraag${opt.transactions === 1 ? '' : 'en'}.</small>
+        </div>
+        <div class="opt-cost">${formatEUR(opt.cost)}</div>
+      </div>
+    `;
+  }
+
+  // motivering
+  if (recommended) {
+    const cheapestNonRec = options.filter(o => o !== recommended && o.coverage >= months)[0];
+    if (cheapestNonRec) {
+      const diff = cheapestNonRec.cost - recommended.cost;
+      html += `<p><small><strong>Motivering:</strong> ${recommended.label} kost ${formatEUR(recommended.cost)} en is daarmee ${formatEUR(diff)} goedkoper dan het op één na goedkoopste alternatief (${cheapestNonRec.label}).</small></p>`;
+    }
+  }
+
+  // info: kwartaalrestitutie
+  html += `<p><small><em>Noot:</em> Vooruitbetaalde MRB van het lopende kwartaal komt automatisch terug en is niet meegerekend in de kosten — die krijgt u sowieso. Bedragen onder €5 worden niet uitbetaald.</small></p>`;
+
+  out.className = 'result';
+  out.innerHTML = html;
+}
+
+/* =========================================================
+   TESTS — datum-utility (zichtbaar in help-paneel)
+   ========================================================= */
+function runDateTests() {
+  const cases = [
+    { in: [2026,  3, 22], expected: [2026,  4, 23], label: '22/03/2026 → 23/04/2026' },
+    { in: [2026,  1, 22], expected: [2026,  2, 23], label: '22/01/2026 → 23/02/2026 (32 dagen)' },
+    { in: [2026,  2, 22], expected: [2026,  3, 23], label: '22/02/2026 → 23/03/2026 (30 dagen)' },
+    { in: [2026,  1, 31], expected: [2026,  3,  1], label: '31/01/2026 → 01/03/2026 (28 feb)' },
+    { in: [2024,  1, 31], expected: [2024,  3,  1], label: '31/01/2024 → 01/03/2024 (29 feb, schrikkeljaar)' },
+    { in: [2026,  4, 30], expected: [2026,  5, 31], label: '30/04/2026 → 31/05/2026' },
+    { in: [2026, 12, 31], expected: [2027,  2,  1], label: '31/12/2026 → 01/02/2027 (jaaroverschrijding)' },
+  ];
+
+  let lines = [];
+  let allPass = true;
+  for (const c of cases) {
+    const input = new Date(c.in[0], c.in[1] - 1, c.in[2]);
+    const got = earliestUnschor(input);
+    const ok = got.getFullYear() === c.expected[0]
+            && got.getMonth() === c.expected[1] - 1
+            && got.getDate()  === c.expected[2];
+    if (!ok) allPass = false;
+    lines.push(`${ok ? '✓' : '✗'} ${c.label}\n   input ${formatDate(input)} → got ${formatDate(got)} (verwacht ${String(c.expected[2]).padStart(2,'0')}-${String(c.expected[1]).padStart(2,'0')}-${c.expected[0]})`);
+  }
+
+  const el = document.getElementById('test-results');
+  if (el) {
+    el.innerHTML = lines.map(l => l.startsWith('✓')
+      ? `<span class="test-pass">${l}</span>`
+      : `<span class="test-fail">${l}</span>`).join('\n')
+      + `\n\n${allPass ? '<span class="test-pass">Alle tests geslaagd.</span>' : '<span class="test-fail">EEN OF MEER TESTS GEFAALD!</span>'}`;
+  }
+  // Ook in console voor ontwikkelaars
+  console.log(lines.join('\n'));
+  return allPass;
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+async function boot() {
+  initTabs();
+  await initProfile();
+  initCalc1();
+  initCalc2();
+  await initCalc3();
+  initCalc4();
+
+  // tests
+  runDateTests();
+  document.getElementById('run-tests').addEventListener('click', runDateTests);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+</script>
+</body>
+</html>
