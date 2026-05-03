@@ -1,0 +1,25 @@
+#!/bin/sh
+# Privacy guard: scan files in the commits being pushed for personal info.
+set -eu
+hookdir="$(cd "$(dirname "$0")" && pwd)"
+zero='0000000000000000000000000000000000000000'
+fail=0
+
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue   # branch deletion
+  if [ "$remote_sha" = "$zero" ]; then
+    files=$(git diff-tree --no-commit-id --name-only -r --root "$local_sha")
+  else
+    files=$(git diff --name-only "$remote_sha..$local_sha")
+  fi
+  [ -z "$files" ] && continue
+  echo "$files" | while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    case "$f" in
+      hooks/*|scripts/install-hooks.*|CLAUDE.md|.claude/*) continue ;;
+    esac
+    git show "$local_sha:$f" 2>/dev/null | "$hookdir/check-personal-info.sh" --stdin "$f" || exit 1
+  done || fail=1
+done
+
+exit $fail

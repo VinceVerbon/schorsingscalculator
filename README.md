@@ -18,6 +18,24 @@ geen dependencies. Profiel- en jaarplanninggegevens worden lokaal in
 - **4. Lange termijn** — kostenoptimum bij langdurige stilstand.
 - **Regels & uitleg** — RDW-tarieven 2026, MRB-mechaniek, bronnen, zelftest.
 
+## Bijdragen / contributing
+
+Na clone één keer de privacy-guard hooks activeren:
+
+```powershell
+# Windows
+.\scripts\install-hooks.ps1
+```
+
+```sh
+# macOS / Linux
+sh scripts/install-hooks.sh
+```
+
+Dit zet `core.hooksPath` op `hooks/`, waarna `pre-commit` en `pre-push` elke
+commit en push scannen op persoonsgegevens en blokkeren als er een match is.
+Patronen staan in `hooks/check-personal-info.sh`.
+
 ## Disclaimer
 
 Indicatieve berekening op basis van publiek beschikbare RDW- en

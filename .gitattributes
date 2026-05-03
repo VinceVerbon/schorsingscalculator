@@ -1,0 +1,7 @@
+# Keep shell scripts and git hooks as LF — Windows CRLF breaks the shebang.
+*.sh           text eol=lf
+hooks/pre-commit  text eol=lf
+hooks/pre-push    text eol=lf
+
+# Default to native EOL for everything else.
+* text=auto

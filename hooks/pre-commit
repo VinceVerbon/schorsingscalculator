@@ -1,0 +1,16 @@
+#!/bin/sh
+# Privacy guard: scan staged content for personal info before commit.
+set -eu
+hookdir="$(cd "$(dirname "$0")" && pwd)"
+files=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$files" ] && exit 0
+rc=0
+echo "$files" | while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  case "$f" in
+    hooks/*|scripts/install-hooks.*|CLAUDE.md|.claude/*) continue ;;
+  esac
+  blob=$(git ls-files -s -- "$f" | awk '{print $2}')
+  [ -z "$blob" ] && continue
+  git cat-file -p "$blob" | "$hookdir/check-personal-info.sh" --stdin "$f" || exit 1
+done
