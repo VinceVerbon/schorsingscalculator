@@ -18,7 +18,8 @@ set -eu
 #   verbon\.net  personal email domain (vverbon@verbon.net)
 #   vincent@     work email start (vincent@syquens.com)
 #   @syquens     work email/domain
-#   syquens      company name
+#   (bare "syquens" intentionally NOT blocked — public company-name attribution
+#    is allowed; the email-form @syquens\.com is what actually leaks identity)
 #   MYAI_*       internal env-var names
 #   OP_SA_TOKEN  1Password service-account env-var
 #   gho_/ghp_/ghs_  GitHub OAuth/PAT/server tokens
@@ -26,7 +27,7 @@ set -eu
 #   C:\Users\vverb  local Windows home path
 #   Kim en Vince    1Password vault name
 #   Hymer 2018      previously-scrubbed camper model hint (block re-introduction)
-PATTERN='vverb|verbon\.net|vincent@|@syquens\.com|syquens|MYAI_SYSTEM_ID|OP_SA_TOKEN|gho_[A-Za-z0-9_]{30,}|ghp_[A-Za-z0-9_]{30,}|ghs_[A-Za-z0-9_]{30,}|op://|C:\\Users\\vverb|Kim en Vince|Hymer 2018'
+PATTERN='vverb|verbon\.net|vincent@|@syquens\.com|MYAI_SYSTEM_ID|OP_SA_TOKEN|gho_[A-Za-z0-9_]{30,}|ghp_[A-Za-z0-9_]{30,}|ghs_[A-Za-z0-9_]{30,}|op://|C:\\Users\\vverb|Kim en Vince|Hymer 2018'
 
 scan_one() {
   _label="$1"
