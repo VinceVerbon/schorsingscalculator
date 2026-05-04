@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="app-version" content="0.1.0" />
 <title>Camper Schorsingscalculator</title>
 <!-- First-party Umami analytics — pageview-level, no third-party cookies. See https://analytics.syquens.com/. -->
 <script async defer src="https://analytics.syquens.com/getinfo" data-website-id="23eab3f3-c19e-4d65-bd17-f992248ed5ed"></script>
@@ -510,43 +511,66 @@
   <section class="panel" id="panel-profile" role="tabpanel" aria-labelledby="tab-profile" aria-hidden="false">
     <div class="card">
       <h2>Camperprofiel</h2>
-      <p>Wordt automatisch bewaard voor volgende sessies. Op basis hiervan bepalen we het schorsingstarief en uw MRB-besparing.</p>
+      <p>Voer uw kenteken in — we halen voertuiggegevens op via de RDW open data (geen DigiD, geen kentekendoorzoek). De MRB wordt zelf berekend op basis van de officiële Belastingdienst-tarieven 2026 en uw provincie.</p>
       <form id="profile-form">
-        <div class="field">
-          <label for="profile-label">Naam of label van de camper <span class="hint">(optioneel)</span></label>
+        <div class="grid-2">
+          <div class="field">
+            <label for="profile-kenteken">Kenteken</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="profile-kenteken" placeholder="bijv. 12-ABC-3" maxlength="10" autocomplete="off" autocapitalize="characters" style="flex:1;text-transform:uppercase;letter-spacing:.05em;" />
+              <button type="button" class="btn" id="profile-lookup">Ophalen</button>
+            </div>
+            <span class="hint" id="profile-kenteken-hint">Lookup loopt over <code>opendata.rdw.nl</code>. Streepjes worden automatisch genegeerd.</span>
+          </div>
+
+          <div class="field">
+            <label for="profile-provincie">Provincie van registratie</label>
+            <select id="profile-provincie" required>
+              <option value="">— kies provincie —</option>
+            </select>
+            <span class="hint">Bepaalt de provinciale opcenten op de hoofdsom.</span>
+          </div>
+        </div>
+
+        <div id="profile-rdw-status" aria-live="polite" style="margin-top:8px;"></div>
+
+        <div id="profile-rdw-info" class="result" style="display:none;margin-top:12px;"></div>
+
+        <div class="field" style="margin-top:12px;">
+          <label for="profile-label">Naam of label <span class="hint">(optioneel)</span></label>
           <input type="text" id="profile-label" placeholder="bijv. mijn camper" />
         </div>
 
-        <div class="grid-2">
-          <div class="field">
-            <label for="profile-det">Datum eerste toelating (DET, veld B)</label>
-            <input type="text" id="profile-det" inputmode="numeric" placeholder="dd/mm/jjjj" maxlength="10" autocomplete="off" required />
-            <span class="hint">Bepaalt of u onder hoog of laag tarief valt.</span>
-          </div>
+        <details id="profile-advanced" style="margin-top:12px;">
+          <summary style="cursor:pointer;font-weight:600;">Geavanceerd: handmatig overschrijven</summary>
 
           <div class="field">
-            <label for="profile-mass">Toegestane maximum massa (kg)</label>
-            <input type="number" id="profile-mass" min="500" max="20000" step="1" required />
-            <span class="hint">Boven 3500 kg geldt automatisch laag tarief.</span>
+            <label><input type="checkbox" id="profile-fijnstof-override" /> Fijnstoftoeslag (19 % over hoofdsom) van toepassing</label>
+            <span class="hint">Standaard automatisch geschat (artikel 23 lid 4): toeslag aan als RDW <code>uitstoot_deeltjes_licht</code> &gt; 0,005 g/km, óf bij DET vóór 1 sept 2009 zonder fijnstof-registratie. Schakel handmatig als de aanslag iets anders zegt.</span>
           </div>
-        </div>
 
-        <div class="field">
-          <span id="profile-reg-label" style="font-weight:600;font-size:.9rem">Kentekenregistratie</span>
-          <div class="radio-group" role="radiogroup" aria-labelledby="profile-reg-label">
-            <label><input type="radio" name="profile-reg" value="M1" checked /><span>M1 (personenauto)</span></label>
-            <label><input type="radio" name="profile-reg" value="N"  /><span>N (bedrijfsauto)</span></label>
+          <div class="field">
+            <label for="profile-mrb-validate">Werkelijke MRB per kwartaal (€) <span class="hint">— optioneel, voor validatie</span></label>
+            <input type="number" id="profile-mrb-validate" min="0" max="5000" step="0.01" placeholder="bedrag van uw aanslag" />
+            <span class="hint">Vul het bedrag van uw werkelijke Belastingdienst-aanslag in. We tonen het verschil met de berekening — handig om instellingen (eigen massa, fijnstof) bij te stellen totdat de berekening klopt.</span>
           </div>
-        </div>
 
-        <div class="field">
-          <label for="profile-mrb">MRB per kwartaal (€)</label>
-          <input type="number" id="profile-mrb" min="0" max="5000" step="0.01" required />
-          <span class="hint">Het bedrag dat u nu per kwartaal aan motorrijtuigenbelasting betaalt.</span>
-        </div>
+          <div class="field">
+            <label for="profile-mrb-override">MRB per kwartaal handmatig (€)</label>
+            <input type="number" id="profile-mrb-override" min="0" max="5000" step="0.01" placeholder="leeg = berekenen" />
+            <span class="hint">Forceert het MRB-bedrag voor downstream berekeningen. Vul alleen als de berekening structureel niet klopt (oldtimer-overgangsregeling, importauto).</span>
+          </div>
 
-        <button type="button" class="btn" id="profile-save">Profiel opslaan</button>
-        <span id="profile-saved-msg" style="margin-left:12px; color:var(--color-good); font-size:.85rem;" aria-live="polite"></span>
+          <div class="field">
+            <label><input type="checkbox" id="profile-iskamper-override" checked /> Behandelen als kampeerauto (halftarief, artikel 23a)</label>
+            <span class="hint">Standaard aan. Uitschakelen geeft het volledige personenauto-tarief.</span>
+          </div>
+        </details>
+
+        <div style="margin-top:12px;">
+          <button type="button" class="btn" id="profile-save">Profiel opslaan</button>
+          <span id="profile-saved-msg" style="margin-left:12px; color:var(--color-good); font-size:.85rem;" aria-live="polite"></span>
+        </div>
       </form>
     </div>
 
@@ -554,11 +578,16 @@
       <h3>Berekend</h3>
       <div class="result" id="profile-derived">
         <div class="result-row"><span class="label">Huidig schorsingstarief</span><span class="value" id="d-tariff">—</span></div>
+        <div class="result-row"><span class="label">MRB per kwartaal (totaal)</span><span class="value" id="d-mrb-q">—</span></div>
         <div class="result-row"><span class="label">MRB per dag</span><span class="value" id="d-mrb-day">—</span></div>
         <div class="result-row"><span class="label">MRB per maand (kwartaal/3)</span><span class="value" id="d-mrb-month">—</span></div>
         <div class="result-row"><span class="label">MRB per jaar</span><span class="value" id="d-mrb-year">—</span></div>
         <div class="result-row"><span class="label">Datum overgang naar laag tarief (DET + 15 jr)</span><span class="value" id="d-laag-date">—</span></div>
       </div>
+      <details id="d-mrb-breakdown" style="margin-top:12px;display:none;">
+        <summary style="cursor:pointer;font-weight:600;">Hoe is dit MRB-bedrag opgebouwd?</summary>
+        <div class="result" id="d-mrb-breakdown-body" style="margin-top:8px;"></div>
+      </details>
     </div>
   </section>
 
@@ -660,32 +689,53 @@
       <h3>MRB-mechaniek</h3>
       <p>MRB stopt automatisch bij schorsing. Vooruitbetaalde MRB van het lopende kwartaal komt automatisch terug (bedragen onder €5 niet). Bij ontschorsing start MRB direct opnieuw, in dezelfde betaalmethode als ervoor. MRB wordt per dag berekend (kwartaalbedrag / 91,25).</p>
 
+      <h3>MRB-berekening 2026 (camper, halftarief)</h3>
+      <p>Vanaf <strong>1 januari 2026</strong> betaalt een als kampeerwagen geregistreerde personenauto het <strong>halftarief</strong> in plaats van het kwarttarief — dat is een verdubbeling t.o.v. 2025. De rekentool bouwt het kwartaalbedrag op uit:</p>
+      <ol>
+        <li><strong>Schijfafronding (xx51..xx50 → xx00)</strong> — Belastingdienst hanteert 100kg-brackets met breakpoints op xx50/xx51. Massa 2890 kg valt in bracket 2851-2950 → bedrag wordt berekend op schijf 2900. JS-formule: <code>Math.floor((m + 49) / 100) * 100</code>.</li>
+        <li><strong>Hoofdsom personenauto 2026</strong> — artikel 23 lid 1. ≤500 kg vlak €21,46; schijven 600/700/800 vaste bedragen; vanaf schijf 900 lineair per schijf van 100 kg (€64,24 + €17,27/100kg).</li>
+        <li><strong>Brandstoftoeslag 2026</strong> — diesel, LPG of aardgas/LPG-G3/R115. Zelfde schijfstructuur.</li>
+        <li><strong>Halftarief-multiplier 0,5</strong> — artikel 23a, voor kampeerauto's. Geldt op hoofdsom + brandstof- + fijnstoftoeslag én op de opcenten-grondslag.</li>
+        <li><strong>Provinciale opcenten over <em>bevroren 1995-grondslag</em></strong> — artikel 222 Provinciewet: opcenten zijn "een percentage van de (gefixeerde) hoofdsom motorrijtuigenbelasting, zoals het tarief daarvan is vastgesteld op 1 april 1995". Deze regel is <strong>wettelijk uniform voor alle 12 provincies</strong>; alleen het percentage verschilt en wordt jaarlijks per provincie vastgesteld (zie de verordening van uw provincie via <a href="https://lokaleregelgeving.overheid.nl/" target="_blank" rel="noopener">lokaleregelgeving.overheid.nl</a>; de 2026-percentages staan in <a href="https://www.cbs.nl/nl-nl/cijfers/detail/80889ned" target="_blank" rel="noopener">CBS 80889ned</a>). De 1995-tabel personenauto: schijf 500/600/700/800/900/1000 → €14,50 / €17,33 / €20,40 / €26,98 / €34,12 / €45,81; daarboven +€11,68 per schijf van 100 kg. Tariefverhogingen sinds 1995 tellen <em>niet</em> mee voor opcenten.</li>
+        <li><strong>Fijnstoftoeslag 19 % van 2026-hoofdsom</strong> — artikel 23 lid 4. Toeslag aan als RDW-veld <code>uitstoot_deeltjes_licht</code> &gt; 0,005 g/km, óf bij DET vóór 1 sept 2009 zonder fijnstof-registratie. Niet op basis van EURO-klasse.</li>
+        <li><strong>Aanslag-totaal</strong> wordt afgerond naar beneden op hele euro's; per component blijft het op centen.</li>
+      </ol>
+      <p><strong>Verifieerbaar tegen echte aanslag</strong> (***REDACTED-KENTEKEN***, dieselcamper 2890 kg, NH): 2026-hoofdsom @ schijf 2900 × halftarief = €204,82; dieseltoeslag idem = €242,20; opcenten = 82,1 % × halftarief × 1995-hoofdsom (€267,73) = €109,90; totaal €556,92 → afgerond €556. Klopt op de cent met aanslagbiljet.</p>
+      <p>Voertuigdata komt uit <code>opendata.rdw.nl</code> (gratis, geen DigiD). 2026-tarieven uit Belastingdienst-memo "Tarieven motorrijtuigenbelasting per 1 januari 2026" (B/CAP/Auto/GWH); 1995-grondslag uit Staatsblad 1995, 152. Volledige documentatie incl. CVDR-referenties per provincie: <code>docs/sources/opcenten-mrb-1995-grondslag.md</code>.</p>
+
       <h3>Verzekering en APK</h3>
       <p>Tijdens schorsing zijn WA-verzekering en APK niet verplicht. Veel verzekeraars (zoals NKC, Camperverzekerd) staan tijdelijk royeren echter niet toe; advies is WA + beperkt casco aan te houden. Bij ontschorsing moet de APK geldig zijn vóór gebruik op de openbare weg. Een geschorste camper mag niet op de openbare weg staan of rijden — privéterrein is verplicht. Handhaving via ANPR-camera's is aangescherpt.</p>
 
       <h3>Wat zit er <em>niet</em> in deze rekentool?</h3>
       <ul>
-        <li>BPM, fijnstoftoeslag en provinciale opcenten — deze zitten al in het door u ingevoerde MRB-bedrag.</li>
+        <li>BPM (aanschafbelasting) — eenmalig en per voertuig anders.</li>
         <li>Verzekeringskosten-vergelijking en APK-planning.</li>
-        <li>Daadwerkelijke koppeling met RDW of DigiD.</li>
+        <li>Daadwerkelijke koppeling met DigiD of het RDW-schorsingsproces (alleen open-data lookup).</li>
+        <li>Oldtimer-overgangsregeling (artikel 84a) en BPM-restituties — gebruik dan de handmatige MRB-override in het profiel.</li>
       </ul>
 
       <h3>Bronnen</h3>
       <ul>
-        <li>RDW: rdw.nl/schorsen/schorsing-aanvragen</li>
-        <li>Belastingdienst: belastingdienst.nl → Motorrijtuigenbelasting → Een motorrijtuig schorsen</li>
-        <li>NKC: nkc.nl/artikel/camper-schorsen</li>
+        <li>RDW: <a href="https://www.rdw.nl/particulier/voertuigen/auto/schorsen-en-ontschorsen-van-een-voertuig" target="_blank" rel="noopener">rdw.nl/schorsen</a></li>
+        <li>RDW open data: <a href="https://opendata.rdw.nl/" target="_blank" rel="noopener">opendata.rdw.nl</a> (datasets <code>m9d7-ebf2</code> + <code>8ys7-d773</code>)</li>
+        <li>Belastingdienst: <a href="https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/prive/auto_en_vervoer/belastingen_op_auto_en_motor/motorrijtuigenbelasting/" target="_blank" rel="noopener">belastingdienst.nl → Motorrijtuigenbelasting</a></li>
+        <li>Belastingdienst-memo "Tarieven motorrijtuigenbelasting per 1 januari 2026" (B/CAP/Auto/GWH, 25-11-2025) — voor de 2026-hoofdsom + brandstoftoeslag.</li>
+        <li><a href="https://zoek.officielebekendmakingen.nl/stb-1995-152.html" target="_blank" rel="noopener">Staatsblad 1995, 152</a> — wijziging Wet MRB '94 art. 23 lid 1: bron voor de bevroren <strong>1995-grondslag</strong> van de provinciale opcenten.</li>
+        <li>Provinciale opcenten-verordeningen (alle 12 provincies, gebundeld op <a href="https://lokaleregelgeving.overheid.nl/" target="_blank" rel="noopener">lokaleregelgeving.overheid.nl</a>) — wettelijke grondslag voor de opcenten-heffing. Het bron-citaat "tarief vastgesteld op 1 april 1995" staat letterlijk in de Noord-Hollandse <a href="https://lokaleregelgeving.overheid.nl/CVDR60304/2" target="_blank" rel="noopener">CVDR60304</a>, maar de regel is wettelijk uniform via art. 222 Provinciewet — alle 12 verordeningen verwijzen naar dezelfde 1995-grondslag.</li>
+        <li><a href="https://www.cbs.nl/nl-nl/cijfers/detail/80889ned" target="_blank" rel="noopener">CBS 80889ned</a> — Provincies; tarieven opcenten motorrijtuigenbelasting (jaarlijkse update, gebruikt voor de tool-constants).</li>
+        <li>Volledige reference incl. CVDR-link per provincie: <code>docs/sources/opcenten-mrb-1995-grondslag.md</code> in deze repo.</li>
+        <li>NKC: <a href="https://www.nkc.nl/artikel/halftarief-motorrijtuigenbelasting-in-2026/" target="_blank" rel="noopener">nkc.nl — halftarief MRB 2026</a></li>
       </ul>
 
-      <h3>Datumberekening — zelftest</h3>
-      <p><small>Zichtbare verificatie van de "+1 maand +1 dag"-functie tegen de testgevallen uit de spec.</small></p>
+      <h3>Zelftests</h3>
+      <p><small>Zichtbare verificatie van datum-arithmetiek én MRB-berekening tegen vaste fixtures.</small></p>
       <pre id="test-results" aria-live="polite">Klik om te draaien…</pre>
       <button type="button" class="btn btn-secondary" id="run-tests">Tests opnieuw draaien</button>
     </div>
   </section>
 
   <footer class="app-footer" style="margin-top:24px;padding-top:12px;border-top:1px solid var(--color-border);text-align:center;color:var(--color-text-muted);font-size:.85rem;">
-    Syquens B.V.
+    Syquens B.V. &middot; <span title="App-versie">v0.1.0</span>
   </footer>
 </main>
 
@@ -705,6 +755,87 @@ const TARIEF_GRENS_LEEFTIJD_JAREN = 15;
 const TARIEF_GRENS_GEWICHT_KG = 3500;
 
 const MS_PER_DAY = 86400000;
+
+/* =========================================================
+   MRB — Belastingdienst-memo 25-11-2025 (B/CAP/Auto/GWH) voor 2026-tarief.
+   Schijven volgen 100kg-bracket xx51..xx50 → xx00 (round-half-down at xx50).
+
+   STRUCTUREEL ONDERSCHEID DAT MAKKELIJK FOUT GAAT:
+   - Basisbedrag, brandstoftoeslag, fijnstoftoeslag → 2026-tabel.
+   - Provinciale opcenten → bevroren 1995-tabel (artikel 222 Provinciewet,
+     verordening Noord-Holland CVDR60304: "het tarief zoals vastgesteld op
+     1 april 1995"). Bron: docs/sources/opcenten-mrb-1995-grondslag.md.
+   ========================================================= */
+const MRB_2026 = {
+  // Hoofdsom personenauto (artikel 23 lid 1) — eigen massa → eur/kwartaal
+  hoofdsom: {
+    le500: 21.46, b600: 29.12, b700: 37.00, b800: 48.30,
+    base900: 64.24, inc900to3200: 17.27,
+    base3300: 474.12, inc3300plus: 12.00,
+  },
+  // Dieseltoeslag (artikel 23 lid 2 a)
+  diesel: {
+    le500: 84.14, b600: 99.59, b700: 115.03, b800: 130.76,
+    base900: 153.00, inc900plus: 16.57,
+  },
+  // LPG-toeslag (artikel 23 lid 2 b — niet-G3)
+  lpg: {
+    le500: 98.71, b600: 118.32, b700: 137.95, b800: 157.54,
+    base900: 172.08, inc900plus: 18.22,
+  },
+  // Aardgas / LPG-G3 / R115 (artikel 23 lid 3)
+  aardgasG3: { le800: 0, base900: 19.05, inc900plus: 19.05 },
+  // Fijnstoftoeslag personenauto = 19 % van hoofdsom (artikel 23 lid 4)
+  fijnstofPctPersonenauto: 0.19,
+  // Camper: artikel 23a — half van het verschuldigde bedrag (vanaf 1 jan 2026; was kwart vóór 2026)
+  kampeerautoMultiplier: 0.5,
+  // Provinciale opcenten 2026 (Belastingdienst-memo, identiek aan CBS-publicatie)
+  opcenten: {
+    'Groningen':         95.7,
+    'Friesland':         92.1,
+    'Drenthe':           92.0,
+    'Overijssel':        82.2,
+    'Flevoland':         84.7,
+    'Gelderland':        98.3,
+    'Utrecht':           86.4,
+    'Noord-Holland':     82.1,
+    'Zuid-Holland':     104.4,
+    'Zeeland':           84.4,
+    'Noord-Brabant':     87.0,
+    'Limburg':           88.5,
+    'Niet-ingezetenen':  82.1,   // gelijk aan laagste provincie (NH)
+  },
+};
+
+const PROVINCIES = [
+  'Drenthe','Flevoland','Friesland','Gelderland','Groningen','Limburg',
+  'Noord-Brabant','Noord-Holland','Overijssel','Utrecht','Zeeland','Zuid-Holland',
+  'Niet-ingezetenen',
+];
+
+/* =========================================================
+   MRB 1995 — gefixeerde hoofdsom-tabel personenauto.
+   Bron: Staatsblad 1995, 152 (wijziging Wet MRB '94 art. 23 lid 1).
+   Conversie NLG → EUR via 1 EUR = 2,20371 NLG.
+   Wordt UITSLUITEND gebruikt als grondslag voor provinciale opcenten
+   (artikel 222 Provinciewet — bevroren tarief).
+   ========================================================= */
+const MRB_1995 = {
+  hoofdsom: {
+    s500:      14.50,   // f 31,95  — schijf ≤550 kg
+    s600:      17.33,   // f 38,20  — schijf 551-650
+    s700:      20.40,   // f 44,95  — schijf 651-750
+    s800:      26.98,   // f 59,45  — schijf 751-850
+    s900:      34.12,   // f 75,20  — schijf 851-950
+    s1000:     45.81,   // f 100,95 — schijf 951-1050
+    incPer100: 11.68,   // f 25,75  — increment per 100 kg boven 1000
+  },
+};
+
+const RDW_OPENDATA = {
+  voertuig:  'https://opendata.rdw.nl/resource/m9d7-ebf2.json',
+  brandstof: 'https://opendata.rdw.nl/resource/8ys7-d773.json',
+};
 
 /* =========================================================
    STORAGE — window.storage with localStorage fallback
@@ -888,6 +1019,207 @@ function mrbPerDay(profile) {
 }
 
 /* =========================================================
+   MRB BEREKENING — op basis van eigen massa, brandstof, DET, provincie
+   ========================================================= */
+function brandstofKey(rdwBrandstof) {
+  if (!rdwBrandstof) return 'benzine';
+  const b = String(rdwBrandstof).toLowerCase();
+  if (b.includes('diesel')) return 'diesel';
+  if (b.includes('cng') || b.includes('lng') || b.includes('aardgas')) return 'aardgasG3';
+  if (b.includes('lpg-g3') || b.includes('lpg g3') || b.includes('af-fabriek') || b.includes('r115')) return 'aardgasG3';
+  if (b.includes('lpg')) return 'lpg';
+  return 'benzine';
+}
+
+/**
+ * Schijfafronding Belastingdienst — bracket xx51..xx50 → xx00.
+ * Verifieerbaar via aanslag (massa 2890 → schijf 2851-2950 → 2900).
+ *   v0.3.0 fix: was Math.ceil-naar-100 (overschatte randgevallen) en daarna lineair-per-kg
+ *   (onderschatte randgevallen). Beide fout. Correct: round-half-down op xx50.
+ */
+function schijf100(massaKg) {
+  const m = Number(massaKg);
+  if (!isFinite(m) || m <= 0) return 0;
+  return Math.floor((m + 49) / 100) * 100;
+}
+
+/**
+ * Hoofdsom personenauto per kwartaal (artikel 23 lid 1, peildatum 2026).
+ * Bedragen per schijf van 100 kg; ≤500-bracket vangt alle massa's t/m schijf 500.
+ */
+function lookupHoofdsom(massaKg) {
+  const s = schijf100(massaKg);
+  if (s <= 0) return 0;
+  const T = MRB_2026.hoofdsom;
+  if (s <= 500) return T.le500;
+  if (s === 600) return T.b600;
+  if (s === 700) return T.b700;
+  if (s === 800) return T.b800;
+  if (s <= 3200) return T.base900  + (s - 900)  / 100 * T.inc900to3200;
+  return                T.base3300 + (s - 3300) / 100 * T.inc3300plus;
+}
+
+/**
+ * Hoofdsom personenauto per 1 april 1995 (Staatsblad 1995, 152).
+ * GRONDSLAG VOOR PROVINCIALE OPCENTEN — bevroren, verandert niet bij 2026-tariefverhogingen.
+ * Bron: Verordening Opcenten Noord-Holland (CVDR60304); identieke wettelijke basis voor alle provincies.
+ */
+function lookupHoofdsom1995(massaKg) {
+  const s = schijf100(massaKg);
+  if (s <= 0) return 0;
+  const T = MRB_1995.hoofdsom;
+  if (s <= 500) return T.s500;
+  if (s === 600) return T.s600;
+  if (s === 700) return T.s700;
+  if (s === 800) return T.s800;
+  if (s === 900) return T.s900;
+  return T.s1000 + (s - 1000) / 100 * T.incPer100;
+}
+
+function lookupBrandstoftoeslag(massaKg, brandstof) {
+  const s = schijf100(massaKg);
+  if (s <= 0) return 0;
+  const key = brandstofKey(brandstof);
+  if (key === 'benzine') return 0;
+  if (key === 'aardgasG3') {
+    if (s <= 800) return 0;
+    return MRB_2026.aardgasG3.base900 + (s - 900) / 100 * MRB_2026.aardgasG3.inc900plus;
+  }
+  const T = key === 'diesel' ? MRB_2026.diesel : MRB_2026.lpg;
+  if (s <= 500) return T.le500;
+  if (s === 600) return T.b600;
+  if (s === 700) return T.b700;
+  if (s === 800) return T.b800;
+  return T.base900 + (s - 900) / 100 * T.inc900plus;
+}
+
+/**
+ * Auto-suggest of fijnstoftoeslag van toepassing is (artikel 23 lid 4 Wet MRB '94).
+ * Officiële regel:
+ *   (a) fijnstofuitstoot > 0,005 g/km geregistreerd in RDW → toeslag aan
+ *   (b) GEEN fijnstof geregistreerd EN DET vóór 1 sept 2009 → toeslag aan
+ * v0.2.0-rc2 fix: was EURO-klasse-heuristiek, gaf vals-positieven (post-2009 EURO 4 → toeslag aan,
+ * terwijl Belastingdienst alleen toeslag toepast op basis van *geregistreerde* fijnstof of pre-2009).
+ * Verifieerbaar tegen ***REDACTED-KENTEKEN*** (DET 2012, EURO 4, geen uitstoot_deeltjes_licht → geen toeslag).
+ */
+function suggestsFijnstof(detISO, brandstofRDW, fijnstofUitstootGkm) {
+  if (brandstofKey(brandstofRDW) !== 'diesel') return false;
+  if (fijnstofUitstootGkm != null && fijnstofUitstootGkm !== '') {
+    const v = Number(fijnstofUitstootGkm);
+    if (isFinite(v)) return v > 0.005;
+  }
+  const det = parseISO(detISO);
+  if (!det) return false;
+  return det < new Date(2009, 8, 1);
+}
+
+/**
+ * Bereken MRB per kwartaal voor camper of personenauto.
+ * spec = { eigenMassa, brandstof, fijnstofUitstoot, detISO, provincie,
+ *          fijnstof: bool|null|undefined (null = auto-suggest), isKamper: bool }
+ *
+ * eigenMassa = RDW `massa_ledig_voertuig` (uitgebouwde camper-massa). Géén
+ * chassis-massa-override nodig: opcenten komen uit de bevroren 1995-grondslag,
+ * niet uit een aparte massa.
+ */
+function computeMRB(spec) {
+  if (!spec || !spec.eigenMassa) return null;
+  const massa = Number(spec.eigenMassa);
+  if (!isFinite(massa) || massa <= 0) return null;
+
+  const hoofdsomP         = lookupHoofdsom(massa);            // 2026-tabel
+  const hoofdsomP1995     = lookupHoofdsom1995(massa);        // 1995-tabel — alléén grondslag voor opcenten
+  const toeslagBrandstofP = lookupBrandstoftoeslag(massa, spec.brandstof);
+
+  const fijnstofToepassing = (spec.fijnstof === null || spec.fijnstof === undefined)
+    ? suggestsFijnstof(spec.detISO, spec.brandstof, spec.fijnstofUitstoot)
+    : !!spec.fijnstof;
+  const fijnstofP = fijnstofToepassing ? hoofdsomP * MRB_2026.fijnstofPctPersonenauto : 0;
+
+  const mult = spec.isKamper ? MRB_2026.kampeerautoMultiplier : 1;
+  const hoofdsom         = hoofdsomP * mult;
+  const brandstoftoeslag = toeslagBrandstofP * mult;
+  const fijnstof         = fijnstofP * mult;
+  const opcGrondslag     = hoofdsomP1995 * mult;              // halftarief geldt ook op opcenten-grondslag
+
+  const opcPct   = MRB_2026.opcenten[spec.provincie];
+  const opcenten = (opcPct != null) ? opcGrondslag * (opcPct / 100) : 0;
+
+  const totaal = hoofdsom + opcenten + brandstoftoeslag + fijnstof;
+
+  return {
+    hoofdsomPersonenauto: hoofdsomP,
+    hoofdsomCamper:       hoofdsom,
+    hoofdsomP1995,                                  // 2026-aanslag-grondslag voor opcenten
+    opcGrondslag,
+    brandstoftoeslag,
+    fijnstof,
+    fijnstofToepassing,
+    fijnstofUitstoot:     spec.fijnstofUitstoot,
+    opcenten,
+    opcPct,
+    totaal,
+    totaalAfgerond:       Math.floor(totaal),       // aanslag rondt totaal af op hele euro's
+    massa,
+    schijf:               schijf100(massa),
+    isKamper:             !!spec.isKamper,
+    brandstofKey:         brandstofKey(spec.brandstof),
+  };
+}
+
+/* =========================================================
+   RDW OPEN DATA — kenteken-lookup
+   ========================================================= */
+function normaliseKenteken(input) {
+  if (!input) return '';
+  return String(input).toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+function rdwDateToISO(s) {
+  if (!s) return null;
+  const ss = String(s);
+  if (/^\d{8}$/.test(ss))           return `${ss.slice(0,4)}-${ss.slice(4,6)}-${ss.slice(6,8)}`;
+  if (/^\d{4}-\d{2}-\d{2}/.test(ss)) return ss.slice(0, 10);
+  return null;
+}
+async function fetchRDW(kenteken) {
+  const k = normaliseKenteken(kenteken);
+  if (!k || k.length < 4 || k.length > 8) {
+    throw new Error('Ongeldig kenteken-formaat.');
+  }
+  const url = (base) => `${base}?kenteken=${encodeURIComponent(k)}`;
+  let vehJson, fuelJson;
+  try {
+    [vehJson, fuelJson] = await Promise.all([
+      fetch(url(RDW_OPENDATA.voertuig)).then(r => r.ok ? r.json() : []),
+      fetch(url(RDW_OPENDATA.brandstof)).then(r => r.ok ? r.json() : []),
+    ]);
+  } catch (e) {
+    throw new Error('RDW open-data niet bereikbaar. Probeer het later opnieuw of vul handmatig.');
+  }
+  const veh  = Array.isArray(vehJson)  && vehJson.length  ? vehJson[0]  : null;
+  const fuel = Array.isArray(fuelJson) && fuelJson.length ? fuelJson[0] : null;
+  if (!veh) throw new Error(`Geen voertuig gevonden voor kenteken ${k}.`);
+  return {
+    fetchedAt: new Date().toISOString(),
+    kenteken: k,
+    voertuigsoort:                       veh.voertuigsoort                       || null,
+    inrichting:                          veh.inrichting                          || null,
+    europese_voertuigcategorie:          veh.europese_voertuigcategorie          || null,
+    merk:                                veh.merk                                || null,
+    handelsbenaming:                     veh.handelsbenaming                     || null,
+    datum_eerste_toelating:              rdwDateToISO(veh.datum_eerste_toelating),
+    datum_tenaamstelling:                rdwDateToISO(veh.datum_tenaamstelling),
+    massa_ledig_voertuig:                veh.massa_ledig_voertuig                ? Number(veh.massa_ledig_voertuig)                : null,
+    massa_rijklaar:                      veh.massa_rijklaar                      ? Number(veh.massa_rijklaar)                      : null,
+    toegestane_maximum_massa_voertuig:   veh.toegestane_maximum_massa_voertuig   ? Number(veh.toegestane_maximum_massa_voertuig)   : null,
+    brandstof_omschrijving:              fuel?.brandstof_omschrijving            || null,
+    uitlaatemissieniveau:                fuel?.uitlaatemissieniveau              || null,
+    uitstoot_deeltjes_licht:             fuel?.uitstoot_deeltjes_licht           != null ? Number(fuel.uitstoot_deeltjes_licht) : null,
+    co2_uitstoot_gecombineerd:           fuel?.co2_uitstoot_gecombineerd         || null,
+  };
+}
+
+/* =========================================================
    APP STATE
    ========================================================= */
 const app = {
@@ -921,66 +1253,195 @@ function initTabs() {
 /* =========================================================
    PROFILE UI
    ========================================================= */
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/**
+ * Bouw een spec voor computeMRB uit de huidige profielstaat.
+ * RDW-data heeft prioriteit boven legacy v1-velden.
+ */
+function profileToMRBSpec(p) {
+  if (!p) return null;
+  const rdw = p.rdw;
+  return {
+    eigenMassa:       rdw?.massa_ledig_voertuig || null,
+    brandstof:        rdw?.brandstof_omschrijving || null,
+    fijnstofUitstoot: rdw?.uitstoot_deeltjes_licht ?? null,
+    detISO:           rdw?.datum_eerste_toelating || p.det || null,
+    provincie:        p.provincie || null,
+    fijnstof:         (p.fijnstofOverride === true || p.fijnstofOverride === false) ? p.fijnstofOverride : null,
+    isKamper:         p.isKamperOverride !== false,
+  };
+}
+
+function renderRDWInfo(rdw) {
+  const el = document.getElementById('profile-rdw-info');
+  if (!el) return;
+  if (!rdw) { el.style.display = 'none'; el.innerHTML = ''; return; }
+
+  const isCamper = (rdw.inrichting || '').toLowerCase().includes('kampeer');
+  const fetchedDate = rdw.fetchedAt ? new Date(rdw.fetchedAt) : null;
+  const detD = parseISO(rdw.datum_eerste_toelating);
+  const tenD = parseISO(rdw.datum_tenaamstelling);
+
+  const warning = isCamper ? '' : `<div class="banner warn" style="margin-bottom:8px"><span class="status-tag">let op</span>RDW-inrichting: <strong>${escapeHtml(rdw.inrichting || '?')}</strong> — niet als kampeerwagen geregistreerd. De halftarief-camperregeling (artikel 23a) geldt alleen na officiële kampeerauto-keuring; controleer de inrichting.</div>`;
+
+  // Fijnstof-uitstoot weergave + interpretatie volgens artikel 23 lid 4
+  let fijnstofRow;
+  if (rdw.uitstoot_deeltjes_licht != null) {
+    const v = Number(rdw.uitstoot_deeltjes_licht);
+    const aboveLimit = v > 0.005;
+    fijnstofRow = `<div class="result-row"><span class="label">Fijnstofuitstoot (licht)</span><span class="value">${v.toFixed(4)} g/km <small style="color:var(--color-text-muted)">${aboveLimit ? '— boven 0,005 g/km grens' : '— onder 0,005 g/km grens'}</small></span></div>`;
+  } else {
+    fijnstofRow = `<div class="result-row" style="opacity:.7"><span class="label">Fijnstofuitstoot (licht)</span><span class="value"><small>niet geregistreerd</small></span></div>`;
+  }
+
+  el.style.display = 'block';
+  el.innerHTML = `
+    ${warning}
+    <div class="result-row"><span class="label">Merk &amp; model</span><span class="value">${escapeHtml(rdw.merk || '?')} ${escapeHtml(rdw.handelsbenaming || '')}</span></div>
+    <div class="result-row"><span class="label">Voertuigsoort &middot; inrichting</span><span class="value">${escapeHtml(rdw.voertuigsoort || '?')} &middot; ${escapeHtml(rdw.inrichting || '?')}</span></div>
+    <div class="result-row"><span class="label">Categorie</span><span class="value">${escapeHtml(rdw.europese_voertuigcategorie || '?')}</span></div>
+    <div class="result-row"><span class="label">Datum eerste toelating (DET)</span><span class="value">${detD ? formatDate(detD) : '?'}</span></div>
+    <div class="result-row"><span class="label">Datum tenaamstelling</span><span class="value">${tenD ? formatDate(tenD) : '?'}</span></div>
+    <div class="result-row"><span class="label">Massa ledig voertuig (RDW)</span><span class="value">${rdw.massa_ledig_voertuig != null ? rdw.massa_ledig_voertuig + ' kg' : '?'} <small style="color:var(--color-text-muted)">— bij kampers vaak hoger dan MRB-massa</small></span></div>
+    <div class="result-row"><span class="label">Massa rijklaar (RDW)</span><span class="value">${rdw.massa_rijklaar != null ? rdw.massa_rijklaar + ' kg' : '?'}</span></div>
+    <div class="result-row"><span class="label">Toegestane max. massa</span><span class="value">${rdw.toegestane_maximum_massa_voertuig != null ? rdw.toegestane_maximum_massa_voertuig + ' kg' : '?'}</span></div>
+    <div class="result-row"><span class="label">Brandstof &middot; emissieniveau</span><span class="value">${escapeHtml(rdw.brandstof_omschrijving || '?')} &middot; ${escapeHtml(rdw.uitlaatemissieniveau || '?')}</span></div>
+    ${fijnstofRow}
+    <div class="result-row" style="opacity:.7"><span class="label" style="font-size:.8rem">Opgehaald</span><span class="value" style="font-size:.8rem">${fetchedDate ? formatDate(fetchedDate) : '?'}</span></div>
+  `;
+}
+
 async function initProfile() {
-  const labelEl = document.getElementById('profile-label');
-  const detEl   = document.getElementById('profile-det');
-  const massEl  = document.getElementById('profile-mass');
-  const mrbEl   = document.getElementById('profile-mrb');
-  const saveBtn = document.getElementById('profile-save');
-  const savedMsg = document.getElementById('profile-saved-msg');
+  const provEl     = document.getElementById('profile-provincie');
+  const kentEl     = document.getElementById('profile-kenteken');
+  const lookupBtn  = document.getElementById('profile-lookup');
+  const labelEl    = document.getElementById('profile-label');
+  const fijnstofEl = document.getElementById('profile-fijnstof-override');
+  const mrbOvEl    = document.getElementById('profile-mrb-override');
+  const kamperEl   = document.getElementById('profile-iskamper-override');
+  const mrbValidateEl  = document.getElementById('profile-mrb-validate');
+  const saveBtn    = document.getElementById('profile-save');
+  const savedMsg   = document.getElementById('profile-saved-msg');
+  const statusEl   = document.getElementById('profile-rdw-status');
 
-  attachDateMask(detEl);
+  PROVINCIES.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    provEl.appendChild(opt);
+  });
 
-  // load
+  // load saved profile (with v1 → v2 fallback)
   const raw = await storage.get('profile');
   if (raw) {
     try {
       const p = JSON.parse(raw);
       app.profile = p;
-      labelEl.value = p.label || '';
-      // p.det is ISO yyyy-mm-dd in storage; toon als dd/mm/yyyy
-      detEl.value   = p.det ? formatDateInput(parseISO(p.det) || parseDateInput(p.det)) : '';
-      massEl.value  = (p.mass ?? '').toString();
-      mrbEl.value   = (p.mrbPerKwartaal ?? '').toString();
-      const reg = p.reg || 'M1';
-      const radio = document.querySelector(`input[name="profile-reg"][value="${reg}"]`);
-      if (radio) radio.checked = true;
+      kentEl.value      = p.kenteken || '';
+      labelEl.value     = p.label || '';
+      provEl.value      = p.provincie || '';
+      mrbValidateEl.value  = (p.mrbValidate && p.mrbValidate > 0) ? String(p.mrbValidate) : '';
+      // v1 migration
+      const legacyMrb = (p.mrbPerKwartaal && !p.rdw && p.mrbOverride == null) ? p.mrbPerKwartaal : null;
+      mrbOvEl.value = (p.mrbOverride != null) ? String(p.mrbOverride)
+                    : (legacyMrb != null    ? String(legacyMrb) : '');
+      kamperEl.checked  = (p.isKamperOverride !== false);
+      if (p.fijnstofOverride === true)  fijnstofEl.checked = true;
+      else if (p.fijnstofOverride === false) fijnstofEl.checked = false;
+      if (p.rdw) renderRDWInfo(p.rdw);
     } catch (e) { /* ignore */ }
   }
 
   function readForm() {
-    const reg = (document.querySelector('input[name="profile-reg"]:checked') || {}).value || 'M1';
-    const detDate = parseDateInput(detEl.value);
-    return {
-      label: labelEl.value.trim(),
-      det:   detDate ? toISO(detDate) : null,  // intern: ISO formaat
-      mass:  Number(massEl.value) || null,
-      mrbPerKwartaal: Number(mrbEl.value) || null,
-      reg,
+    const prev = app.profile || {};
+    const out = {
+      kenteken:           normaliseKenteken(kentEl.value),
+      label:              labelEl.value.trim(),
+      provincie:          provEl.value || null,
+      mrbValidate:        (mrbValidateEl.value !== ''   && Number(mrbValidateEl.value) > 0)   ? Number(mrbValidateEl.value)   : null,
+      mrbOverride:        (mrbOvEl.value !== ''         && Number(mrbOvEl.value) > 0)         ? Number(mrbOvEl.value)         : null,
+      isKamperOverride:   !!kamperEl.checked,
+      fijnstofOverride:   !!fijnstofEl.checked,
+      rdw:                prev.rdw || null,
+      det:    prev.det  || null,
+      mass:   prev.mass || null,
+      reg:    prev.reg  || null,
+      mrbPerKwartaal: null,
     };
+    if (out.rdw) {
+      out.det  = out.rdw.datum_eerste_toelating || out.det;
+      out.mass = out.rdw.toegestane_maximum_massa_voertuig || out.mass;
+      out.reg  = (out.rdw.europese_voertuigcategorie === 'M1') ? 'M1' : 'N';
+    }
+    if (out.mrbOverride != null) {
+      out.mrbPerKwartaal = out.mrbOverride;
+    } else {
+      const result = computeMRB(profileToMRBSpec(out));
+      if (result) {
+        out.mrbPerKwartaal = result.totaal;
+        out._mrbResult = result;
+      } else {
+        out.mrbPerKwartaal = prev.mrbPerKwartaal || null;
+      }
+    }
+    return out;
   }
 
   function refresh() {
     app.profile = readForm();
     renderDerived();
-    // also refresh dependent calcs
     renderCalc1();
     renderCalc2();
     renderCalc3Result();
     renderCalc4();
   }
 
-  [labelEl, detEl, massEl, mrbEl].forEach(el => el.addEventListener('input', refresh));
-  document.querySelectorAll('input[name="profile-reg"]').forEach(el => el.addEventListener('change', refresh));
+  [kentEl, labelEl, mrbOvEl, mrbValidateEl].forEach(el => el.addEventListener('input', refresh));
+  [fijnstofEl, kamperEl, provEl].forEach(el => el.addEventListener('change', refresh));
+
+  lookupBtn.addEventListener('click', async () => {
+    const k = normaliseKenteken(kentEl.value);
+    if (!k || k.length < 4) {
+      statusEl.innerHTML = `<div class="banner bad"><span class="status-tag">⚠️ ongeldig</span>Vul een geldig kenteken in (minimaal 4 tekens).</div>`;
+      return;
+    }
+    statusEl.innerHTML = `<div class="banner"><span class="status-tag">⏳ ophalen…</span>RDW open data wordt geraadpleegd voor <code>${escapeHtml(k)}</code>…</div>`;
+    lookupBtn.disabled = true;
+    try {
+      const rdw = await fetchRDW(k);
+      app.profile = app.profile || {};
+      app.profile.rdw = rdw;
+      kentEl.value = rdw.kenteken;
+      // Fijnstof: auto-suggest op basis van actuele Belastingdienst-regel (uitstoot_deeltjes_licht of pre-2009)
+      const suggested = suggestsFijnstof(rdw.datum_eerste_toelating, rdw.brandstof_omschrijving, rdw.uitstoot_deeltjes_licht);
+      fijnstofEl.checked = suggested;
+      renderRDWInfo(rdw);
+      statusEl.innerHTML = `<div class="banner good"><span class="status-tag">✓ gevonden</span>${escapeHtml(rdw.merk || '')} ${escapeHtml(rdw.handelsbenaming || '')} (kenteken ${escapeHtml(rdw.kenteken)}).</div>`;
+      refresh();
+    } catch (e) {
+      statusEl.innerHTML = `<div class="banner bad"><span class="status-tag">⚠️ fout</span>${escapeHtml(e.message || String(e))}</div>`;
+    } finally {
+      lookupBtn.disabled = false;
+    }
+  });
 
   saveBtn.addEventListener('click', async () => {
     const p = readForm();
-    if (!p.det || !p.mass || !p.mrbPerKwartaal) {
-      savedMsg.textContent = 'Vul DET, gewicht en MRB-bedrag in.';
+    if (!p.provincie) {
+      savedMsg.textContent = 'Kies een provincie.';
       savedMsg.style.color = 'var(--color-bad)';
       return;
     }
-    await storage.set('profile', JSON.stringify(p));
+    if (!p.rdw && p.mrbOverride == null) {
+      savedMsg.textContent = 'Haal voertuiggegevens op (knop Ophalen) of vul handmatig MRB-bedrag in.';
+      savedMsg.style.color = 'var(--color-bad)';
+      return;
+    }
+    const persistable = { ...p };
+    delete persistable._mrbResult;
+    await storage.set('profile', JSON.stringify(persistable));
     app.profile = p;
     savedMsg.textContent = 'Opgeslagen.';
     savedMsg.style.color = 'var(--color-good)';
@@ -992,41 +1453,106 @@ async function initProfile() {
 
 function renderDerived() {
   const p = app.profile;
-  const tariff = computeTariff(p);
-  const tariffEl = document.getElementById('d-tariff');
-  const dayEl    = document.getElementById('d-mrb-day');
-  const monthEl  = document.getElementById('d-mrb-month');
-  const yearEl   = document.getElementById('d-mrb-year');
-  const laagEl   = document.getElementById('d-laag-date');
+  const tariffEl     = document.getElementById('d-tariff');
+  const qEl          = document.getElementById('d-mrb-q');
+  const dayEl        = document.getElementById('d-mrb-day');
+  const monthEl      = document.getElementById('d-mrb-month');
+  const yearEl       = document.getElementById('d-mrb-year');
+  const laagEl       = document.getElementById('d-laag-date');
+  const breakdownEl  = document.getElementById('d-mrb-breakdown');
+  const breakdownBody= document.getElementById('d-mrb-breakdown-body');
 
-  if (!p || !tariff) {
+  const reset = () => {
+    tariffEl.textContent = qEl.textContent = dayEl.textContent = monthEl.textContent = yearEl.textContent = laagEl.textContent = '—';
+    if (breakdownEl) breakdownEl.style.display = 'none';
+  };
+  if (!p) return reset();
+
+  const tariff = computeTariff(p);
+  if (tariff) {
+    const badge = `<span class="tariff-badge ${tariff === 'laag' ? 'laag' : ''}">${tariff}</span>`;
+    tariffEl.innerHTML = `${badge} <span style="margin-left:6px">aanvraag 1 jaar ${formatEUR(getCostsForTariff(tariff).aanvraag1jaar)}</span>`;
+  } else {
     tariffEl.textContent = '—';
-    dayEl.textContent = '—';
-    monthEl.textContent = '—';
-    yearEl.textContent = '—';
-    laagEl.textContent = '—';
-    return;
   }
 
-  const badge = `<span class="tariff-badge ${tariff === 'laag' ? 'laag' : ''}">${tariff === 'laag' ? 'laag' : 'hoog'}</span>`;
-  tariffEl.innerHTML = `${badge} <span style="margin-left:6px">aanvraag 1 jaar ${formatEUR(getCostsForTariff(tariff).aanvraag1jaar)}</span>`;
-
   const q = Number(p.mrbPerKwartaal) || 0;
-  dayEl.textContent   = formatEUR(q / MRB_DAGEN_PER_KWARTAAL);
-  monthEl.textContent = formatEUR(q / 3);
-  yearEl.textContent  = formatEUR(q * KWARTALEN_PER_JAAR);
+  if (q > 0) {
+    qEl.textContent     = formatEUR(q);
+    dayEl.textContent   = formatEUR(q / MRB_DAGEN_PER_KWARTAAL);
+    monthEl.textContent = formatEUR(q / 3);
+    yearEl.textContent  = formatEUR(q * KWARTALEN_PER_JAAR);
+  } else {
+    qEl.textContent = dayEl.textContent = monthEl.textContent = yearEl.textContent = '—';
+  }
 
-  // overgang naar laag tarief
   const det = parseISO(p.det);
   if (det) {
     const laagDate = addYears(det, TARIEF_GRENS_LEEFTIJD_JAREN);
-    if (laagDate <= startOfDay(new Date())) {
-      laagEl.textContent = 'reeds bereikt';
-    } else {
-      laagEl.textContent = formatDate(laagDate);
-    }
+    laagEl.textContent = (laagDate <= startOfDay(new Date())) ? 'reeds bereikt' : formatDate(laagDate);
   } else {
     laagEl.textContent = '—';
+  }
+
+  // breakdown
+  const r = p._mrbResult;
+  if (r && p.mrbOverride == null) {
+    breakdownEl.style.display = 'block';
+    const opcLabel    = (p.provincie && r.opcPct != null) ? `${p.provincie} (${r.opcPct}%)` : 'opcenten';
+    const camperBadge = r.isKamper ? '<small style="color:var(--color-text-muted)">camper × 0,5</small>' : '';
+    const fijnstofRow = r.fijnstof > 0
+      ? `<div class="result-row"><span class="label">+ Fijnstoftoeslag (19% × hoofdsom personenauto${r.isKamper ? ' × 0,5' : ''})</span><span class="value">${formatEUR(r.fijnstof)}</span></div>`
+      : `<div class="result-row" style="opacity:.6"><span class="label">+ Fijnstoftoeslag</span><span class="value">— niet van toepassing</span></div>`;
+    const brandstofRow = r.brandstoftoeslag > 0
+      ? `<div class="result-row"><span class="label">+ Brandstoftoeslag (${r.brandstofKey}${r.isKamper ? ', × 0,5' : ''})</span><span class="value">${formatEUR(r.brandstoftoeslag)}</span></div>`
+      : '';
+
+    // Validatie tegen werkelijke aanslag — vergelijk tegen het naar beneden afgeronde aanslagbedrag
+    // (dat is wat op de aanslagbiljet staat), niet tegen de centen-som.
+    let validationRow = '';
+    if (p.mrbValidate && p.mrbValidate > 0) {
+      const diff = r.totaalAfgerond - p.mrbValidate;
+      const absDiff = Math.abs(diff);
+      const tone = absDiff <= 0.50 ? 'good' : absDiff <= 5 ? 'warn' : 'bad';
+      const sign = diff >= 0 ? '+' : '−';
+      const msg = absDiff <= 0.50
+        ? 'Match — berekend aanslagbedrag klopt op de euro met uw aanslag.'
+        : `Verschil ${sign}${formatEUR(absDiff)}. Controleer kenteken, provincie en fijnstoftoeslag-instelling.`;
+      validationRow = `<div class="banner ${tone}" style="margin-top:12px"><span class="status-tag">validatie</span>Werkelijke aanslag: <strong>${formatEUR(p.mrbValidate)}</strong> &middot; Berekend aanslagbedrag: <strong>€${r.totaalAfgerond}</strong> <small style="color:var(--color-text-muted)">(som ${formatEUR(r.totaal)} → afgerond)</small>. ${msg}</div>`;
+    }
+
+    const massaSrc = `<small style="color:var(--color-text-muted)">RDW <code>massa_ledig_voertuig</code> &middot; schijf ${r.schijf} kg</small>`;
+
+    breakdownBody.innerHTML = `
+      <div class="result-row"><span class="label">Eigen massa MRB ${massaSrc}</span><span class="value">${r.massa} kg</span></div>
+      <hr/>
+      <div class="result-row"><span class="label">Hoofdsom personenauto 2026 (artikel 23 lid 1, schijf ${r.schijf} kg)</span><span class="value">${formatEUR(r.hoofdsomPersonenauto)}</span></div>
+      <div class="result-row"><span class="label">Hoofdsom (verschuldigd) ${camperBadge}</span><span class="value">${formatEUR(r.hoofdsomCamper)}</span></div>
+      <div class="result-row"><span class="label">+ Opcenten ${opcLabel} <small style="color:var(--color-text-muted)">over <strong>1995-grondslag</strong> ${formatEUR(r.opcGrondslag)}</small></span><span class="value">${formatEUR(r.opcenten)}</span></div>
+      ${brandstofRow}
+      ${fijnstofRow}
+      <hr/>
+      <div class="result-row"><span class="label">Som van componenten <small style="color:var(--color-text-muted)">(op centen)</small></span><span class="value">${formatEUR(r.totaal)}</span></div>
+      <div class="result-row" style="font-size:1.05rem;"><span class="label"><strong>Aanslagbedrag per kwartaal</strong> <small style="color:var(--color-text-muted)">(naar beneden afgerond op hele euro's — wat u daadwerkelijk betaalt)</small></span><span class="value"><strong>€${r.totaalAfgerond}</strong></span></div>
+      ${validationRow}
+      <details style="margin-top:8px;font-size:.85rem;color:var(--color-text-muted);">
+        <summary style="cursor:pointer;">Waarom valt het opcenten-bedrag lager uit dan verwacht? &middot; bronnen</summary>
+        <p style="margin-top:8px;">De provincie heft opcenten <strong>niet</strong> over de huidige hoofdsom, maar over een <strong>bevroren versie uit 1995</strong>. Die regel geldt voor alle 12 provincies; alleen het percentage verschilt. Sinds 1995 is de hoofdsom flink omhoog gegaan, maar die verhogingen tellen wettelijk niet mee voor de opcenten — vandaar dat het opcenten-bedrag lager uitvalt dan u zou verwachten op basis van de actuele hoofdsom × percentage.</p>
+        <p>De Belastingdienst rondt uw eigen massa af op de dichtstbijzijnde 100 kg-schijf (bracket xx51 t/m xx50). Bij 2890 kg betekent dat: bracket 2851-2950 → schijf 2900.</p>
+        <p><strong>Bronnen om dit zelf na te lezen:</strong></p>
+        <ul>
+          <li><a href="https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/berichten/nieuws/verhoging-motorrijtuigenbelasting-mrb-2026" target="_blank" rel="noopener">Belastingdienst — MRB-tarieven 2026</a> (basisbedrag, brandstoftoeslag, fijnstoftoeslag)</li>
+          <li><a href="https://www.cbs.nl/nl-nl/cijfers/detail/80889ned" target="_blank" rel="noopener">CBS — opcenten per provincie 2026</a> (de percentages)</li>
+          <li><a href="https://lokaleregelgeving.overheid.nl/" target="_blank" rel="noopener">lokaleregelgeving.overheid.nl</a> — verordening van uw eigen provincie (zoek op "opcenten")</li>
+          <li><a href="https://zoek.officielebekendmakingen.nl/stb-1995-152.html" target="_blank" rel="noopener">Staatsblad 1995-152</a> — de wettelijke 1995-tabel waar opcenten over worden geheven</li>
+        </ul>
+      </details>
+    `;
+  } else if (p.mrbOverride != null) {
+    breakdownEl.style.display = 'block';
+    breakdownBody.innerHTML = `<p>MRB-bedrag is handmatig ingevuld via de geavanceerde override. Schakel de override uit (laat het veld leeg) om de automatische berekening te zien.</p>`;
+  } else {
+    breakdownEl.style.display = 'none';
   }
 }
 
@@ -1669,10 +2195,10 @@ function renderCalc4() {
 }
 
 /* =========================================================
-   TESTS — datum-utility (zichtbaar in help-paneel)
+   TESTS — datum-utility + MRB-berekening + live RDW-validatie
    ========================================================= */
-function runDateTests() {
-  const cases = [
+async function runDateTests() {
+  const dateCases = [
     { in: [2026,  3, 22], expected: [2026,  4, 23], label: '22/03/2026 → 23/04/2026' },
     { in: [2026,  1, 22], expected: [2026,  2, 23], label: '22/01/2026 → 23/02/2026 (32 dagen)' },
     { in: [2026,  2, 22], expected: [2026,  3, 23], label: '22/02/2026 → 23/03/2026 (30 dagen)' },
@@ -1684,24 +2210,188 @@ function runDateTests() {
 
   let lines = [];
   let allPass = true;
-  for (const c of cases) {
+
+  lines.push('— Datum-arithmetiek (vroegst toegestane ontschorsing) —');
+  for (const c of dateCases) {
     const input = new Date(c.in[0], c.in[1] - 1, c.in[2]);
     const got = earliestUnschor(input);
     const ok = got.getFullYear() === c.expected[0]
             && got.getMonth() === c.expected[1] - 1
             && got.getDate()  === c.expected[2];
     if (!ok) allPass = false;
-    lines.push(`${ok ? '✓' : '✗'} ${c.label}\n   input ${formatDate(input)} → got ${formatDate(got)} (verwacht ${String(c.expected[2]).padStart(2,'0')}-${String(c.expected[1]).padStart(2,'0')}-${c.expected[0]})`);
+    lines.push(`${ok ? '✓' : '✗'} ${c.label}\n   input ${formatDate(input)} → got ${formatDate(got)} (verwacht ${String(c.expected[2]).padStart(2,'0')}/${String(c.expected[1]).padStart(2,'0')}/${c.expected[0]})`);
+  }
+
+  // MRB-fixtures — bedragen handmatig nagerekend uit:
+  //   • Belastingdienst-memo 25-11-2025 (B/CAP/Auto/GWH) voor 2026-tarief (basisbedrag, brandstof- en fijnstoftoeslag)
+  //   • Staatsblad 1995, 152 voor de bevroren 1995-grondslag (provinciale opcenten)
+  //   • Verordening Opcenten Noord-Holland (CVDR60304) voor de wettelijke koppeling
+  // Schijfafronding: bracket xx51..xx50 → xx00 (round-half-down op xx50).
+  const mrbCases = [
+    {
+      // ANCHOR-fixture: matcht een echte aanslag exact (€204,82 / €242,20 / €109,90 / totaal €556,92).
+      // Bevestigt: (a) 2026-tabel voor basisbedrag+brandstof, (b) 1995-tabel voor opcenten, (c) schijfafronding 2890→2900.
+      label: '***REDACTED-KENTEKEN*** 2890 kg diesel post-2009 NH (camper) — matcht echte aanslag',
+      spec: { eigenMassa: 2890, brandstof: 'Diesel', detISO: '2012-02-17', provincie: 'Noord-Holland', isKamper: true /* fijnstof auto */ },
+      expected: { hoofdsomPersonenauto: 409.64, hoofdsomCamper: 204.820, hoofdsomP1995: 267.73, opcGrondslag: 133.865, opcenten: 109.903, brandstoftoeslag: 242.200, fijnstof: 0, totaal: 556.923 },
+    },
+    {
+      label: 'Personenauto benzine 1500 kg ZH (geen kamper) — opcenten op 1995-grondslag €104,21',
+      spec: { eigenMassa: 1500, brandstof: 'Benzine', detISO: '2020-01-01', provincie: 'Zuid-Holland', isKamper: false, fijnstof: false },
+      expected: { hoofdsomPersonenauto: 167.86, hoofdsomCamper: 167.86, hoofdsomP1995: 104.21, opcGrondslag: 104.21, opcenten: 108.795, brandstoftoeslag: 0, fijnstof: 0, totaal: 276.655 },
+    },
+    {
+      label: 'Camper diesel pre-2009 2500 kg Utrecht — auto-fijnstof aan (DET-fallback)',
+      spec: { eigenMassa: 2500, brandstof: 'Diesel', detISO: '2005-01-01', provincie: 'Utrecht', isKamper: true /* fijnstof auto */ },
+      expected: { hoofdsomPersonenauto: 340.56, hoofdsomCamper: 170.28, hoofdsomP1995: 221.01, opcGrondslag: 110.505, opcenten: 95.476, brandstoftoeslag: 209.06, fijnstof: 32.353, totaal: 507.169 },
+    },
+    {
+      label: 'Schijfgrens 850 kg benzine NH (camper) — valt in schijf 800 (xx51..xx50 → 800)',
+      spec: { eigenMassa: 850, brandstof: 'Benzine', detISO: '2020-01-01', provincie: 'Noord-Holland', isKamper: true, fijnstof: false },
+      expected: { hoofdsomPersonenauto: 48.30, hoofdsomCamper: 24.15, hoofdsomP1995: 26.98, opcGrondslag: 13.49, opcenten: 11.075, brandstoftoeslag: 0, fijnstof: 0, totaal: 35.225 },
+    },
+    {
+      label: 'Schijfgrens 851 kg benzine NH (camper) — valt in schijf 900 (één kg verder dan 850)',
+      spec: { eigenMassa: 851, brandstof: 'Benzine', detISO: '2020-01-01', provincie: 'Noord-Holland', isKamper: true, fijnstof: false },
+      expected: { hoofdsomPersonenauto: 64.24, hoofdsomCamper: 32.12, hoofdsomP1995: 34.12, opcGrondslag: 17.06, opcenten: 14.006, brandstoftoeslag: 0, fijnstof: 0, totaal: 46.126 },
+    },
+    {
+      label: 'Aardgas/CNG 1100 kg NB (camper) — schijf 1100',
+      spec: { eigenMassa: 1100, brandstof: 'CNG', detISO: '2020-01-01', provincie: 'Noord-Brabant', isKamper: true, fijnstof: false },
+      expected: { hoofdsomPersonenauto: 98.78, hoofdsomCamper: 49.39, hoofdsomP1995: 57.49, opcGrondslag: 28.745, opcenten: 25.008, brandstoftoeslag: 28.575, fijnstof: 0, totaal: 102.973 },
+    },
+    {
+      label: 'Schijfafronding 1450 kg benzine ZH — exact op xx50 → schijf 1400',
+      spec: { eigenMassa: 1450, brandstof: 'Benzine', detISO: '2020-01-01', provincie: 'Zuid-Holland', isKamper: false, fijnstof: false },
+      expected: { hoofdsomPersonenauto: 150.59, hoofdsomCamper: 150.59, hoofdsomP1995: 92.53, opcGrondslag: 92.53, opcenten: 96.601, brandstoftoeslag: 0, fijnstof: 0, totaal: 247.191 },
+    },
+    {
+      label: 'Schijfafronding 1451 kg benzine ZH — net boven xx50 → schijf 1500',
+      spec: { eigenMassa: 1451, brandstof: 'Benzine', detISO: '2020-01-01', provincie: 'Zuid-Holland', isKamper: false, fijnstof: false },
+      expected: { hoofdsomPersonenauto: 167.86, hoofdsomCamper: 167.86, hoofdsomP1995: 104.21, opcGrondslag: 104.21, opcenten: 108.795, brandstoftoeslag: 0, fijnstof: 0, totaal: 276.655 },
+    },
+    {
+      label: 'Auto-fijnstof: pre-2009 diesel zonder fijnstof-veld → toeslag aan (DET-fallback)',
+      spec: { eigenMassa: 1500, brandstof: 'Diesel', detISO: '2005-06-01', provincie: 'Noord-Holland', isKamper: false /* fijnstof auto */ },
+      expectFijnstofToepassing: true,
+    },
+    {
+      // BUG-REGRESSIE: oude code firede toeslag op EURO 4 ongeacht DET; nieuwe regel: alleen via uitstoot_deeltjes_licht of pre-2009.
+      label: 'Auto-fijnstof: post-2009 EURO 4 diesel zonder fijnstof-veld → GEEN toeslag (was bug)',
+      spec: { eigenMassa: 1500, brandstof: 'Diesel', detISO: '2012-02-17', provincie: 'Noord-Holland', isKamper: false /* fijnstof auto */ },
+      expectFijnstofToepassing: false,
+    },
+    {
+      label: 'Auto-fijnstof: post-2009 diesel met geregistreerde fijnstof > 0,005 g/km → toeslag aan',
+      spec: { eigenMassa: 1500, brandstof: 'Diesel', detISO: '2018-01-01', fijnstofUitstoot: 0.008,
+              provincie: 'Noord-Holland', isKamper: false /* fijnstof auto */ },
+      expectFijnstofToepassing: true,
+    },
+    {
+      label: 'Auto-fijnstof: pre-2009 diesel met geregistreerde fijnstof ≤ 0,005 → GEEN toeslag (regel a wint van DET)',
+      spec: { eigenMassa: 1500, brandstof: 'Diesel', detISO: '2005-01-01', fijnstofUitstoot: 0.001,
+              provincie: 'Noord-Holland', isKamper: false /* fijnstof auto */ },
+      expectFijnstofToepassing: false,
+    },
+  ];
+
+  lines.push('\n— MRB-berekening (Belastingdienst-tarieven 2026) —');
+  const tol = 0.02;  // €0,02 tolerance op afronding
+  for (const c of mrbCases) {
+    const r = computeMRB(c.spec);
+    if (!r) {
+      allPass = false;
+      lines.push(`✗ ${c.label}\n   computeMRB gaf null terug`);
+      continue;
+    }
+    if (c.expectFijnstofToepassing !== undefined) {
+      const ok = (r.fijnstofToepassing === c.expectFijnstofToepassing);
+      if (!ok) allPass = false;
+      lines.push(`${ok ? '✓' : '✗'} ${c.label}\n   fijnstofToepassing=${r.fijnstofToepassing} (verwacht ${c.expectFijnstofToepassing})`);
+      continue;
+    }
+    const e = c.expected;
+    const checks = [
+      ['hoofdsomPersonenauto', e.hoofdsomPersonenauto],
+      ['hoofdsomCamper',       e.hoofdsomCamper],
+      ['hoofdsomP1995',        e.hoofdsomP1995],
+      ['opcGrondslag',         e.opcGrondslag],
+      ['opcenten',             e.opcenten],
+      ['brandstoftoeslag',     e.brandstoftoeslag],
+      ['fijnstof',             e.fijnstof],
+      ['totaal',               e.totaal],
+    ].filter(([_, v]) => v !== undefined);
+    const fails = checks.filter(([k, v]) => Math.abs(r[k] - v) > tol);
+    if (fails.length === 0) {
+      lines.push(`✓ ${c.label}\n   totaal=${formatEUR(r.totaal)} (hoofdsom ${formatEUR(r.hoofdsomCamper)} + opc ${formatEUR(r.opcenten)} [grondslag '95: ${formatEUR(r.opcGrondslag)}] + brandstof ${formatEUR(r.brandstoftoeslag)} + fijnstof ${formatEUR(r.fijnstof)})`);
+    } else {
+      allPass = false;
+      const detail = fails.map(([k, v]) => `${k}: got ${r[k].toFixed(3)} verwacht ${v.toFixed(3)}`).join(', ');
+      lines.push(`✗ ${c.label}\n   ${detail}`);
+    }
+  }
+
+  // Live RDW-validatie tegen ***REDACTED-KENTEKEN*** — kampeerauto met bekende echte aanslag.
+  // Verifieert end-to-end: RDW-fetch, brandstof-join, fijnstof-veld, schijfafronding op massa,
+  // 2026-tabel voor basisbedrag/brandstof, 1995-tabel voor opcenten.
+  // Aanslag-bedragen: basisbedrag €204,82 + brandstoftoeslag €242,20 + opcenten €109,90 → totaal €556,92.
+  lines.push('\n— Live RDW-validatie (***REDACTED-KENTEKEN***, echte aanslag) —');
+  try {
+    const rdwData = await fetchRDW('***REDACTED-KENTEKEN***');
+    const rdwChecks = [
+      ['inrichting',                        'kampeerwagen', rdwData.inrichting && rdwData.inrichting.toLowerCase().includes('kampeer')],
+      ['voertuigsoort',                     'Personenauto', rdwData.voertuigsoort === 'Personenauto'],
+      ['europese_voertuigcategorie',        'M1',           rdwData.europese_voertuigcategorie === 'M1'],
+      ['datum_eerste_toelating',            '2012-02-17',   rdwData.datum_eerste_toelating === '2012-02-17'],
+      ['brandstof_omschrijving',            'Diesel',       rdwData.brandstof_omschrijving === 'Diesel'],
+      ['uitlaatemissieniveau',              'EURO 4',       rdwData.uitlaatemissieniveau === 'EURO 4'],
+      ['uitstoot_deeltjes_licht',           'null',         rdwData.uitstoot_deeltjes_licht == null],
+      ['massa_ledig_voertuig',              '2890',         Number(rdwData.massa_ledig_voertuig) === 2890],
+    ];
+    for (const [field, expected, ok] of rdwChecks) {
+      if (!ok) allPass = false;
+      const actual = rdwData[field];
+      lines.push(`${ok ? '✓' : '✗'} RDW-veld ${field}: ${ok ? 'matcht' : 'verwacht "' + expected + '", got "' + actual + '"'}`);
+    }
+    // Eind-tot-eind tegen aanslag-bedragen — RDW-massa 2890 wordt afgerond op schijf 2900.
+    const r332 = computeMRB({
+      eigenMassa:       Number(rdwData.massa_ledig_voertuig),
+      brandstof:        rdwData.brandstof_omschrijving,
+      fijnstofUitstoot: rdwData.uitstoot_deeltjes_licht,
+      detISO:           rdwData.datum_eerste_toelating,
+      provincie:        'Noord-Holland',
+      isKamper:         true,
+    });
+    const aanslag = [
+      ['basisbedrag (hoofdsom camper)', 'hoofdsomCamper',   204.82, 0.05],
+      ['brandstoftoeslag',              'brandstoftoeslag', 242.20, 0.05],
+      ['provinciale opcenten',          'opcenten',         109.90, 0.05],
+      ['totaal',                        'totaal',           556.92, 0.10],
+    ];
+    for (const [label, key, expected, eps] of aanslag) {
+      const got = r332[key];
+      const ok = Math.abs(got - expected) <= eps;
+      if (!ok) allPass = false;
+      lines.push(`${ok ? '✓' : '✗'} ${label}: ${formatEUR(got)} (verwacht ${formatEUR(expected)} per aanslag)`);
+    }
+    const okFijnstof = (r332.fijnstof === 0 && r332.fijnstofToepassing === false);
+    if (!okFijnstof) allPass = false;
+    lines.push(`${okFijnstof ? '✓' : '✗'} Fijnstof: toepassing=${r332.fijnstofToepassing}, bedrag=${formatEUR(r332.fijnstof)} (verwacht uit, geen geregistreerde fijnstof + post-2009)`);
+  } catch (err) {
+    lines.push(`⊘ Live RDW-fetch overgeslagen (${escapeHtml(err.message || String(err))}). Lokaal openen of offline? Geen falen — alleen unit-tests gevalideerd.`);
   }
 
   const el = document.getElementById('test-results');
   if (el) {
-    el.innerHTML = lines.map(l => l.startsWith('✓')
-      ? `<span class="test-pass">${l}</span>`
-      : `<span class="test-fail">${l}</span>`).join('\n')
+    el.innerHTML = lines.map(l => {
+      if (l.startsWith('—') || l.startsWith('\n—')) return `<strong>${escapeHtml(l)}</strong>`;
+      if (l.startsWith('✓')) return `<span class="test-pass">${escapeHtml(l)}</span>`;
+      if (l.startsWith('✗')) return `<span class="test-fail">${escapeHtml(l)}</span>`;
+      if (l.startsWith('⊘')) return `<span style="color:var(--color-text-muted)">${escapeHtml(l)}</span>`;
+      return escapeHtml(l);
+    }).join('\n')
       + `\n\n${allPass ? '<span class="test-pass">Alle tests geslaagd.</span>' : '<span class="test-fail">EEN OF MEER TESTS GEFAALD!</span>'}`;
   }
-  // Ook in console voor ontwikkelaars
   console.log(lines.join('\n'));
   return allPass;
 }

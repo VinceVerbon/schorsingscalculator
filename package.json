@@ -1,0 +1,12 @@
+{
+  "name": "schorsingscalculator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Camper Schorsingscalculator — Nederlandse single-page rekentool voor RDW-schorsing en MRB-besparing.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VinceVerbon/schorsingscalculator.git"
+  },
+  "homepage": "https://mycamper.app/schorsing"
+}
