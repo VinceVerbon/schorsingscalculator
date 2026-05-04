@@ -68,7 +68,7 @@ opcentenPct  = MRB_2026.opcenten[provincie] / 100            // huidige percenta
 opcenten     = opcentenPct × multiplier × hoofdsom1995
 ```
 
-**Validatie tegen werkelijke aanslag** (***REDACTED-KENTEKEN***, dieselcamper, 2890 kg, NH):
+**Validatie tegen werkelijke aanslag** (dieselcamper 2890 kg, Noord-Holland, post-2009 EURO 4):
 - schijf 2890 → 2900
 - 1995-hoofdsom @ 2900 = €267,73
 - × 0,5 (halftarief) = €133,87

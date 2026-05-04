@@ -689,19 +689,15 @@
       <h3>MRB-mechaniek</h3>
       <p>MRB stopt automatisch bij schorsing. Vooruitbetaalde MRB van het lopende kwartaal komt automatisch terug (bedragen onder €5 niet). Bij ontschorsing start MRB direct opnieuw, in dezelfde betaalmethode als ervoor. MRB wordt per dag berekend (kwartaalbedrag / 91,25).</p>
 
-      <h3>MRB-berekening 2026 (camper, halftarief)</h3>
-      <p>Vanaf <strong>1 januari 2026</strong> betaalt een als kampeerwagen geregistreerde personenauto het <strong>halftarief</strong> in plaats van het kwarttarief — dat is een verdubbeling t.o.v. 2025. De rekentool bouwt het kwartaalbedrag op uit:</p>
+      <h3>Hoe de wegenbelasting voor uw camper wordt berekend</h3>
+      <p>Vanaf <strong>1 januari 2026</strong> betalen kampeerauto's het <strong>halftarief</strong> in plaats van het kwarttarief — een verdubbeling t.o.v. 2025. Uw kwartaalbedrag bestaat uit vier delen:</p>
       <ol>
-        <li><strong>Schijfafronding (xx51..xx50 → xx00)</strong> — Belastingdienst hanteert 100kg-brackets met breakpoints op xx50/xx51. Massa 2890 kg valt in bracket 2851-2950 → bedrag wordt berekend op schijf 2900. JS-formule: <code>Math.floor((m + 49) / 100) * 100</code>.</li>
-        <li><strong>Hoofdsom personenauto 2026</strong> — artikel 23 lid 1. ≤500 kg vlak €21,46; schijven 600/700/800 vaste bedragen; vanaf schijf 900 lineair per schijf van 100 kg (€64,24 + €17,27/100kg).</li>
-        <li><strong>Brandstoftoeslag 2026</strong> — diesel, LPG of aardgas/LPG-G3/R115. Zelfde schijfstructuur.</li>
-        <li><strong>Halftarief-multiplier 0,5</strong> — artikel 23a, voor kampeerauto's. Geldt op hoofdsom + brandstof- + fijnstoftoeslag én op de opcenten-grondslag.</li>
-        <li><strong>Provinciale opcenten over <em>bevroren 1995-grondslag</em></strong> — artikel 222 Provinciewet: opcenten zijn "een percentage van de (gefixeerde) hoofdsom motorrijtuigenbelasting, zoals het tarief daarvan is vastgesteld op 1 april 1995". Deze regel is <strong>wettelijk uniform voor alle 12 provincies</strong>; alleen het percentage verschilt en wordt jaarlijks per provincie vastgesteld (zie de verordening van uw provincie via <a href="https://lokaleregelgeving.overheid.nl/" target="_blank" rel="noopener">lokaleregelgeving.overheid.nl</a>; de 2026-percentages staan in <a href="https://www.cbs.nl/nl-nl/cijfers/detail/80889ned" target="_blank" rel="noopener">CBS 80889ned</a>). De 1995-tabel personenauto: schijf 500/600/700/800/900/1000 → €14,50 / €17,33 / €20,40 / €26,98 / €34,12 / €45,81; daarboven +€11,68 per schijf van 100 kg. Tariefverhogingen sinds 1995 tellen <em>niet</em> mee voor opcenten.</li>
-        <li><strong>Fijnstoftoeslag 19 % van 2026-hoofdsom</strong> — artikel 23 lid 4. Toeslag aan als RDW-veld <code>uitstoot_deeltjes_licht</code> &gt; 0,005 g/km, óf bij DET vóór 1 sept 2009 zonder fijnstof-registratie. Niet op basis van EURO-klasse.</li>
-        <li><strong>Aanslag-totaal</strong> wordt afgerond naar beneden op hele euro's; per component blijft het op centen.</li>
+        <li><strong>Basisbedrag</strong> — afhankelijk van het leeggewicht van uw camper. Voor kampeerauto's geldt het halftarief.</li>
+        <li><strong>Brandstoftoeslag</strong> — alleen bij diesel, LPG of aardgas; benzine kent geen toeslag. Ook gehalveerd voor kampers.</li>
+        <li><strong>Provinciale opcenten</strong> — een percentage dat de provincie zelf vaststelt. Wordt wettelijk geheven over een bevroren basisbedrag uit 1995 — niet over het actuele 2026-tarief. Daardoor valt dit deel doorgaans lager uit dan u op het eerste gezicht zou verwachten. Geldt voor alle 12 provincies; alleen het percentage verschilt.</li>
+        <li><strong>Fijnstoftoeslag</strong> — een opslag bovenop het basisbedrag, alléén voor oudere diesels (van vóór 1 september 2009 of zonder roetfilter). Bepaalt de tool automatisch op basis van de RDW-data.</li>
       </ol>
-      <p><strong>Verifieerbaar tegen echte aanslag</strong> (***REDACTED-KENTEKEN***, dieselcamper 2890 kg, NH): 2026-hoofdsom @ schijf 2900 × halftarief = €204,82; dieseltoeslag idem = €242,20; opcenten = 82,1 % × halftarief × 1995-hoofdsom (€267,73) = €109,90; totaal €556,92 → afgerond €556. Klopt op de cent met aanslagbiljet.</p>
-      <p>Voertuigdata komt uit <code>opendata.rdw.nl</code> (gratis, geen DigiD). 2026-tarieven uit Belastingdienst-memo "Tarieven motorrijtuigenbelasting per 1 januari 2026" (B/CAP/Auto/GWH); 1995-grondslag uit Staatsblad 1995, 152. Volledige documentatie incl. CVDR-referenties per provincie: <code>docs/sources/opcenten-mrb-1995-grondslag.md</code>.</p>
+      <p>De Belastingdienst rondt het kwartaaltotaal naar beneden af op hele euro's — dat is wat er daadwerkelijk op uw aanslag staat. Voertuiggegevens komen uit de openbare RDW-database; geen DigiD nodig.</p>
 
       <h3>Verzekering en APK</h3>
       <p>Tijdens schorsing zijn WA-verzekering en APK niet verplicht. Veel verzekeraars (zoals NKC, Camperverzekerd) staan tijdelijk royeren echter niet toe; advies is WA + beperkt casco aan te houden. Bij ontschorsing moet de APK geldig zijn vóór gebruik op de openbare weg. Een geschorste camper mag niet op de openbare weg staan of rijden — privéterrein is verplicht. Handhaving via ANPR-camera's is aangescherpt.</p>
@@ -716,15 +712,13 @@
 
       <h3>Bronnen</h3>
       <ul>
-        <li>RDW: <a href="https://www.rdw.nl/particulier/voertuigen/auto/schorsen-en-ontschorsen-van-een-voertuig" target="_blank" rel="noopener">rdw.nl/schorsen</a></li>
-        <li>RDW open data: <a href="https://opendata.rdw.nl/" target="_blank" rel="noopener">opendata.rdw.nl</a> (datasets <code>m9d7-ebf2</code> + <code>8ys7-d773</code>)</li>
-        <li>Belastingdienst: <a href="https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/prive/auto_en_vervoer/belastingen_op_auto_en_motor/motorrijtuigenbelasting/" target="_blank" rel="noopener">belastingdienst.nl → Motorrijtuigenbelasting</a></li>
-        <li>Belastingdienst-memo "Tarieven motorrijtuigenbelasting per 1 januari 2026" (B/CAP/Auto/GWH, 25-11-2025) — voor de 2026-hoofdsom + brandstoftoeslag.</li>
-        <li><a href="https://zoek.officielebekendmakingen.nl/stb-1995-152.html" target="_blank" rel="noopener">Staatsblad 1995, 152</a> — wijziging Wet MRB '94 art. 23 lid 1: bron voor de bevroren <strong>1995-grondslag</strong> van de provinciale opcenten.</li>
-        <li>Provinciale opcenten-verordeningen (alle 12 provincies, gebundeld op <a href="https://lokaleregelgeving.overheid.nl/" target="_blank" rel="noopener">lokaleregelgeving.overheid.nl</a>) — wettelijke grondslag voor de opcenten-heffing. Het bron-citaat "tarief vastgesteld op 1 april 1995" staat letterlijk in de Noord-Hollandse <a href="https://lokaleregelgeving.overheid.nl/CVDR60304/2" target="_blank" rel="noopener">CVDR60304</a>, maar de regel is wettelijk uniform via art. 222 Provinciewet — alle 12 verordeningen verwijzen naar dezelfde 1995-grondslag.</li>
-        <li><a href="https://www.cbs.nl/nl-nl/cijfers/detail/80889ned" target="_blank" rel="noopener">CBS 80889ned</a> — Provincies; tarieven opcenten motorrijtuigenbelasting (jaarlijkse update, gebruikt voor de tool-constants).</li>
-        <li>Volledige reference incl. CVDR-link per provincie: <code>docs/sources/opcenten-mrb-1995-grondslag.md</code> in deze repo.</li>
-        <li>NKC: <a href="https://www.nkc.nl/artikel/halftarief-motorrijtuigenbelasting-in-2026/" target="_blank" rel="noopener">nkc.nl — halftarief MRB 2026</a></li>
+        <li><a href="https://www.rdw.nl/particulier/voertuigen/auto/schorsen-en-ontschorsen-van-een-voertuig" target="_blank" rel="noopener">RDW — schorsen en ontschorsen</a> (regels en tarieven 2026)</li>
+        <li><a href="https://opendata.rdw.nl/" target="_blank" rel="noopener">RDW open data</a> — voertuiggegevens via kenteken-lookup (publiek, geen inlog)</li>
+        <li><a href="https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/prive/auto_en_vervoer/belastingen_op_auto_en_motor/motorrijtuigenbelasting/" target="_blank" rel="noopener">Belastingdienst — Motorrijtuigenbelasting</a> (2026-tarieven en regels)</li>
+        <li><a href="https://www.cbs.nl/nl-nl/cijfers/detail/80889ned" target="_blank" rel="noopener">CBS — opcenten per provincie</a> (jaarlijkse percentages)</li>
+        <li><a href="https://lokaleregelgeving.overheid.nl/" target="_blank" rel="noopener">lokaleregelgeving.overheid.nl</a> — verordening van uw eigen provincie (zoek op "opcenten")</li>
+        <li><a href="https://zoek.officielebekendmakingen.nl/stb-1995-152.html" target="_blank" rel="noopener">Staatsblad 1995, 152</a> — wettelijke bron voor de bevroren 1995-grondslag waar de opcenten over worden geheven</li>
+        <li><a href="https://www.nkc.nl/artikel/halftarief-motorrijtuigenbelasting-in-2026/" target="_blank" rel="noopener">NKC — halftarief MRB vanaf 2026</a></li>
       </ul>
 
       <h3>Zelftests</h3>
@@ -1100,7 +1094,6 @@ function lookupBrandstoftoeslag(massaKg, brandstof) {
  *   (b) GEEN fijnstof geregistreerd EN DET vóór 1 sept 2009 → toeslag aan
  * v0.2.0-rc2 fix: was EURO-klasse-heuristiek, gaf vals-positieven (post-2009 EURO 4 → toeslag aan,
  * terwijl Belastingdienst alleen toeslag toepast op basis van *geregistreerde* fijnstof of pre-2009).
- * Verifieerbaar tegen ***REDACTED-KENTEKEN*** (DET 2012, EURO 4, geen uitstoot_deeltjes_licht → geen toeslag).
  */
 function suggestsFijnstof(detISO, brandstofRDW, fijnstofUitstootGkm) {
   if (brandstofKey(brandstofRDW) !== 'diesel') return false;
@@ -1536,16 +1529,9 @@ function renderDerived() {
       <div class="result-row" style="font-size:1.05rem;"><span class="label"><strong>Aanslagbedrag per kwartaal</strong> <small style="color:var(--color-text-muted)">(naar beneden afgerond op hele euro's — wat u daadwerkelijk betaalt)</small></span><span class="value"><strong>€${r.totaalAfgerond}</strong></span></div>
       ${validationRow}
       <details style="margin-top:8px;font-size:.85rem;color:var(--color-text-muted);">
-        <summary style="cursor:pointer;">Waarom valt het opcenten-bedrag lager uit dan verwacht? &middot; bronnen</summary>
-        <p style="margin-top:8px;">De provincie heft opcenten <strong>niet</strong> over de huidige hoofdsom, maar over een <strong>bevroren versie uit 1995</strong>. Die regel geldt voor alle 12 provincies; alleen het percentage verschilt. Sinds 1995 is de hoofdsom flink omhoog gegaan, maar die verhogingen tellen wettelijk niet mee voor de opcenten — vandaar dat het opcenten-bedrag lager uitvalt dan u zou verwachten op basis van de actuele hoofdsom × percentage.</p>
-        <p>De Belastingdienst rondt uw eigen massa af op de dichtstbijzijnde 100 kg-schijf (bracket xx51 t/m xx50). Bij 2890 kg betekent dat: bracket 2851-2950 → schijf 2900.</p>
-        <p><strong>Bronnen om dit zelf na te lezen:</strong></p>
-        <ul>
-          <li><a href="https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/berichten/nieuws/verhoging-motorrijtuigenbelasting-mrb-2026" target="_blank" rel="noopener">Belastingdienst — MRB-tarieven 2026</a> (basisbedrag, brandstoftoeslag, fijnstoftoeslag)</li>
-          <li><a href="https://www.cbs.nl/nl-nl/cijfers/detail/80889ned" target="_blank" rel="noopener">CBS — opcenten per provincie 2026</a> (de percentages)</li>
-          <li><a href="https://lokaleregelgeving.overheid.nl/" target="_blank" rel="noopener">lokaleregelgeving.overheid.nl</a> — verordening van uw eigen provincie (zoek op "opcenten")</li>
-          <li><a href="https://zoek.officielebekendmakingen.nl/stb-1995-152.html" target="_blank" rel="noopener">Staatsblad 1995-152</a> — de wettelijke 1995-tabel waar opcenten over worden geheven</li>
-        </ul>
+        <summary style="cursor:pointer;">Waarom valt het opcenten-bedrag lager uit dan verwacht?</summary>
+        <p style="margin-top:8px;">De provincie heft opcenten <strong>niet</strong> over de huidige hoofdsom, maar over een <strong>bevroren versie uit 1995</strong>. Die regel geldt voor alle 12 provincies; alleen het percentage verschilt. Sinds 1995 is het Rijksdeel flink omhooggegaan, maar die verhogingen tellen wettelijk niet mee voor de opcenten.</p>
+        <p>De Belastingdienst rondt uw leeggewicht af op de dichtstbijzijnde schijf van 100 kg. Volledige uitleg en bronnen vindt u onder "Regels &amp; uitleg".</p>
       </details>
     `;
   } else if (p.mrbOverride != null) {
@@ -2229,9 +2215,10 @@ async function runDateTests() {
   // Schijfafronding: bracket xx51..xx50 → xx00 (round-half-down op xx50).
   const mrbCases = [
     {
-      // ANCHOR-fixture: matcht een echte aanslag exact (€204,82 / €242,20 / €109,90 / totaal €556,92).
+      // Anchor tegen aanslag-bedragen voor een dieselcamper 2890 kg in NH:
+      // basisbedrag €204,82 + brandstoftoeslag €242,20 + opcenten €109,90 = €556,92.
       // Bevestigt: (a) 2026-tabel voor basisbedrag+brandstof, (b) 1995-tabel voor opcenten, (c) schijfafronding 2890→2900.
-      label: '***REDACTED-KENTEKEN*** 2890 kg diesel post-2009 NH (camper) — matcht echte aanslag',
+      label: 'Anchor: 2890 kg diesel post-2009 NH (camper) — matcht aanslag-bedragen',
       spec: { eigenMassa: 2890, brandstof: 'Diesel', detISO: '2012-02-17', provincie: 'Noord-Holland', isKamper: true /* fijnstof auto */ },
       expected: { hoofdsomPersonenauto: 409.64, hoofdsomCamper: 204.820, hoofdsomP1995: 267.73, opcGrondslag: 133.865, opcenten: 109.903, brandstoftoeslag: 242.200, fijnstof: 0, totaal: 556.923 },
     },
@@ -2329,56 +2316,6 @@ async function runDateTests() {
       const detail = fails.map(([k, v]) => `${k}: got ${r[k].toFixed(3)} verwacht ${v.toFixed(3)}`).join(', ');
       lines.push(`✗ ${c.label}\n   ${detail}`);
     }
-  }
-
-  // Live RDW-validatie tegen ***REDACTED-KENTEKEN*** — kampeerauto met bekende echte aanslag.
-  // Verifieert end-to-end: RDW-fetch, brandstof-join, fijnstof-veld, schijfafronding op massa,
-  // 2026-tabel voor basisbedrag/brandstof, 1995-tabel voor opcenten.
-  // Aanslag-bedragen: basisbedrag €204,82 + brandstoftoeslag €242,20 + opcenten €109,90 → totaal €556,92.
-  lines.push('\n— Live RDW-validatie (***REDACTED-KENTEKEN***, echte aanslag) —');
-  try {
-    const rdwData = await fetchRDW('***REDACTED-KENTEKEN***');
-    const rdwChecks = [
-      ['inrichting',                        'kampeerwagen', rdwData.inrichting && rdwData.inrichting.toLowerCase().includes('kampeer')],
-      ['voertuigsoort',                     'Personenauto', rdwData.voertuigsoort === 'Personenauto'],
-      ['europese_voertuigcategorie',        'M1',           rdwData.europese_voertuigcategorie === 'M1'],
-      ['datum_eerste_toelating',            '2012-02-17',   rdwData.datum_eerste_toelating === '2012-02-17'],
-      ['brandstof_omschrijving',            'Diesel',       rdwData.brandstof_omschrijving === 'Diesel'],
-      ['uitlaatemissieniveau',              'EURO 4',       rdwData.uitlaatemissieniveau === 'EURO 4'],
-      ['uitstoot_deeltjes_licht',           'null',         rdwData.uitstoot_deeltjes_licht == null],
-      ['massa_ledig_voertuig',              '2890',         Number(rdwData.massa_ledig_voertuig) === 2890],
-    ];
-    for (const [field, expected, ok] of rdwChecks) {
-      if (!ok) allPass = false;
-      const actual = rdwData[field];
-      lines.push(`${ok ? '✓' : '✗'} RDW-veld ${field}: ${ok ? 'matcht' : 'verwacht "' + expected + '", got "' + actual + '"'}`);
-    }
-    // Eind-tot-eind tegen aanslag-bedragen — RDW-massa 2890 wordt afgerond op schijf 2900.
-    const r332 = computeMRB({
-      eigenMassa:       Number(rdwData.massa_ledig_voertuig),
-      brandstof:        rdwData.brandstof_omschrijving,
-      fijnstofUitstoot: rdwData.uitstoot_deeltjes_licht,
-      detISO:           rdwData.datum_eerste_toelating,
-      provincie:        'Noord-Holland',
-      isKamper:         true,
-    });
-    const aanslag = [
-      ['basisbedrag (hoofdsom camper)', 'hoofdsomCamper',   204.82, 0.05],
-      ['brandstoftoeslag',              'brandstoftoeslag', 242.20, 0.05],
-      ['provinciale opcenten',          'opcenten',         109.90, 0.05],
-      ['totaal',                        'totaal',           556.92, 0.10],
-    ];
-    for (const [label, key, expected, eps] of aanslag) {
-      const got = r332[key];
-      const ok = Math.abs(got - expected) <= eps;
-      if (!ok) allPass = false;
-      lines.push(`${ok ? '✓' : '✗'} ${label}: ${formatEUR(got)} (verwacht ${formatEUR(expected)} per aanslag)`);
-    }
-    const okFijnstof = (r332.fijnstof === 0 && r332.fijnstofToepassing === false);
-    if (!okFijnstof) allPass = false;
-    lines.push(`${okFijnstof ? '✓' : '✗'} Fijnstof: toepassing=${r332.fijnstofToepassing}, bedrag=${formatEUR(r332.fijnstof)} (verwacht uit, geen geregistreerde fijnstof + post-2009)`);
-  } catch (err) {
-    lines.push(`⊘ Live RDW-fetch overgeslagen (${escapeHtml(err.message || String(err))}). Lokaal openen of offline? Geen falen — alleen unit-tests gevalideerd.`);
   }
 
   const el = document.getElementById('test-results');

@@ -27,7 +27,9 @@ set -eu
 #   C:\Users\vverb  local Windows home path
 #   Kim en Vince    1Password vault name
 #   Hymer 2018      previously-scrubbed camper model hint (block re-introduction)
-PATTERN='vverb|verbon\.net|vincent@|@syquens\.com|MYAI_SYSTEM_ID|OP_SA_TOKEN|gho_[A-Za-z0-9_]{30,}|ghp_[A-Za-z0-9_]{30,}|ghs_[A-Za-z0-9_]{30,}|op://|C:\\Users\\vverb|Kim en Vince|Hymer 2018'
+#   TT[- ]?332[- ]?K  owner's specific kenteken (privacy-sensitive, leaked in
+#                     fixtures and test output before — block re-introduction)
+PATTERN='vverb|verbon\.net|vincent@|@syquens\.com|MYAI_SYSTEM_ID|OP_SA_TOKEN|gho_[A-Za-z0-9_]{30,}|ghp_[A-Za-z0-9_]{30,}|ghs_[A-Za-z0-9_]{30,}|op://|C:\\Users\\vverb|Kim en Vince|Hymer 2018|[Tt][Tt][- ]?332[- ]?[Kk]'
 
 scan_one() {
   _label="$1"
