@@ -9,6 +9,11 @@ while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
   [ "$local_sha" = "$zero" ] && continue   # branch deletion
   if [ "$remote_sha" = "$zero" ]; then
     files=$(git diff-tree --no-commit-id --name-only -r --root "$local_sha")
+  elif ! git rev-parse -q --verify "$remote_sha^{commit}" >/dev/null 2>&1; then
+    # Remote sha is unknown locally — happens after a force-push that rewrites
+    # history (e.g. privacy redaction via git filter-repo). The diff-range trick
+    # can't work here, so scan the entire tree of the new local commit instead.
+    files=$(git ls-tree -r --name-only "$local_sha")
   else
     files=$(git diff --name-only "$remote_sha..$local_sha")
   fi
