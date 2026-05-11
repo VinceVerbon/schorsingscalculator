@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="app-version" content="0.1.0" />
+<meta name="app-version" content="0.2.0" />
 <title>Camper Schorsingscalculator</title>
 <!-- First-party Umami analytics — pageview-level, no third-party cookies. See https://analytics.syquens.com/. -->
 <script async defer src="https://analytics.syquens.com/getinfo" data-website-id="23eab3f3-c19e-4d65-bd17-f992248ed5ed"></script>
@@ -679,8 +679,9 @@
 
       <h3>RDW-tarieven 2026</h3>
       <ul>
-        <li><strong>Hoog tarief</strong> — personenauto-kenteken (M1) én jonger dan 15 jaar én ≤3500 kg: aanvraag 1 jaar €88,05; verlenging per jaar €29,10.</li>
-        <li><strong>Laag tarief</strong> — bedrijfsauto-kenteken (N) óf 15 jaar of ouder óf zwaarder dan 3500 kg: €29,10 zowel aanvraag als verlenging.</li>
+        <li><strong>Hoog tarief</strong> — kampeerwagen jonger dan 15 jaar, óf personenauto (voertuig licht, TMM ≤3500 kg) jonger dan 15 jaar: aanvraag 1 jaar €88,05; verlenging per jaar €29,10.</li>
+        <li><strong>Laag tarief</strong> — kampeerwagen of personenauto van 15 jaar of ouder, óf bedrijfsauto (N), óf "voertuig zwaar" (TMM &gt;3500 kg, niet-kamper): €29,10 zowel aanvraag als verlenging.</li>
+        <li><small>Bron: Regeling tarieven Dienst Wegverkeer 2026, Bijlage VII (BWBR0051875). "Kampeerwagens" is een aparte categorie — de 3500 kg-grens geldt alleen voor niet-kampers.</small></li>
       </ul>
 
       <h3>Schorsingsperiode</h3>
@@ -729,7 +730,7 @@
   </section>
 
   <footer class="app-footer" style="margin-top:24px;padding-top:12px;border-top:1px solid var(--color-border);text-align:center;color:var(--color-text-muted);font-size:.85rem;">
-    Syquens B.V. &middot; <span title="App-versie">v0.1.0</span>
+    Syquens B.V. &middot; <span title="App-versie">v0.2.0</span>
   </footer>
 </main>
 
@@ -1014,12 +1015,18 @@ function computeTariff(profile, refDate = new Date()) {
   const det = parseISO(profile.det);
   if (!det) return null;
 
+  // Regeling tarieven Dienst Wegverkeer 2026, Bijlage VII (BWBR0051875):
+  // "Kampeerwagens" is een aparte categorie naast "voertuig licht/zwaar".
+  // Voor kampeerwagens telt UITSLUITEND de leeftijd (<15j = hoog, ≥15j = laag).
+  // De 3500 kg TMM-grens sorteert alleen niet-kampers tussen licht en zwaar.
+  const isKamper = !!profile.isKamperOverride
+                || /kampeer/i.test(profile.rdw?.inrichting || '');
   const isN = profile.reg === 'N';
   const isHeavy = Number(profile.mass) > TARIEF_GRENS_GEWICHT_KG;
   const ageThreshold = addYears(det, TARIEF_GRENS_LEEFTIJD_JAREN);
   const isOld = ageThreshold <= startOfDay(refDate);
 
-  const isLaag = isN || isHeavy || isOld;
+  const isLaag = isKamper ? isOld : (isOld || isN || isHeavy);
   return isLaag ? 'laag' : 'hoog';
 }
 
@@ -2237,6 +2244,56 @@ async function runDateTests() {
             && got.getDate()  === c.expected[2];
     if (!ok) allPass = false;
     lines.push(`${ok ? '✓' : '✗'} ${c.label}\n   input ${formatDate(input)} → got ${formatDate(got)} (verwacht ${String(c.expected[2]).padStart(2,'0')}/${String(c.expected[1]).padStart(2,'0')}/${c.expected[0]})`);
+  }
+
+  // Tarief-fixtures — Regeling tarieven RDW 2026, Bijlage VII (BWBR0051875).
+  // Kampeerwagens vormen een eigen categorie naast voertuig-licht/zwaar; voor hen
+  // telt UITSLUITEND de leeftijd, geen TMM-grens. Regressie-anker: een 4000 kg
+  // camper <15j moet 'hoog' geven (RDW-calculator zegt €88,05 — was 'laag' in tool).
+  const refToday = new Date(2026, 4, 11);
+  const tariffCases = [
+    {
+      label: 'REGRESSIE: kampeerwagen 4000 kg, DET 2015 (<15j) → hoog (was bug: gaf laag door 3500 kg-clausule)',
+      profile: { det: '2015-05-11', mass: 4000, reg: 'M1', rdw: { inrichting: 'kampeerwagen' } },
+      expected: 'hoog',
+    },
+    {
+      label: 'Kampeerwagen 4000 kg, DET 2010 (>15j) → laag (alleen leeftijd telt voor kampers)',
+      profile: { det: '2010-01-01', mass: 4000, reg: 'M1', rdw: { inrichting: 'kampeerwagen' } },
+      expected: 'laag',
+    },
+    {
+      label: 'Kampeerwagen 2890 kg, DET 2015 (<15j, licht) → hoog',
+      profile: { det: '2015-05-11', mass: 2890, reg: 'M1', rdw: { inrichting: 'kampeerwagen' } },
+      expected: 'hoog',
+    },
+    {
+      label: 'Niet-kamper personenauto 1500 kg, DET 2020 → hoog (licht + jong)',
+      profile: { det: '2020-01-01', mass: 1500, reg: 'M1', rdw: { inrichting: 'stationwagen' } },
+      expected: 'hoog',
+    },
+    {
+      label: 'Niet-kamper personenauto 4000 kg, DET 2020 → laag (zwaar)',
+      profile: { det: '2020-01-01', mass: 4000, reg: 'M1', rdw: { inrichting: 'stationwagen' } },
+      expected: 'laag',
+    },
+    {
+      label: 'Niet-kamper bedrijfsauto-kenteken (N) 1500 kg, DET 2020 → laag (N-reg)',
+      profile: { det: '2020-01-01', mass: 1500, reg: 'N', rdw: { inrichting: 'gesloten opbouw' } },
+      expected: 'laag',
+    },
+    {
+      label: 'isKamperOverride forceert kampeer-regime ook zonder RDW-inrichting',
+      profile: { det: '2015-05-11', mass: 4000, reg: 'M1', isKamperOverride: true, rdw: { inrichting: 'stationwagen' } },
+      expected: 'hoog',
+    },
+  ];
+  lines.push('\n— Schorsingstarief (RDW 2026, Bijlage VII) —');
+  for (const c of tariffCases) {
+    const got = computeTariff(c.profile, refToday);
+    const ok = got === c.expected;
+    if (!ok) allPass = false;
+    lines.push(`${ok ? '✓' : '✗'} ${c.label}\n   got '${got}' (verwacht '${c.expected}')`);
   }
 
   // MRB-fixtures — bedragen handmatig nagerekend uit:
