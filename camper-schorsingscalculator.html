@@ -520,7 +520,7 @@
               <input type="text" id="profile-kenteken" placeholder="bijv. 12-ABC-3" maxlength="10" autocomplete="off" autocapitalize="characters" style="flex:1;text-transform:uppercase;letter-spacing:.05em;" />
               <button type="button" class="btn" id="profile-lookup">Ophalen</button>
             </div>
-            <span class="hint" id="profile-kenteken-hint">Lookup loopt over <code>opendata.rdw.nl</code>. Streepjes worden automatisch genegeerd.</span>
+            <span class="hint" id="profile-kenteken-hint">Lookup loopt over <code>opendata.rdw.nl</code>. Streepjes worden automatisch genegeerd. Voer <code>TEST-123</code> in voor de ingebakken testfixture (scenario-tests, geen RDW-call).</span>
           </div>
 
           <div class="field">
@@ -829,6 +829,27 @@ const MRB_1995 = {
 const RDW_OPENDATA = {
   voertuig:  'https://opendata.rdw.nl/resource/m9d7-ebf2.json',
   brandstof: 'https://opendata.rdw.nl/resource/8ys7-d773.json',
+};
+
+// Test-fixture: kenteken TEST-123 (genormaliseerd TEST123) gaat NIET naar RDW maar geeft
+// onderstaande mock-record terug. Bedoeld voor scenario-tests (bezwaar-checks, randgevallen
+// rond 3500 kg / 15 jaar, brandstoftypes, fijnstof). Pas waarden hier aan en redeploy.
+const TEST_KENTEKEN = 'TEST123';
+const TEST_KENTEKEN_DATA = {
+  voertuigsoort:                     'Personenauto',
+  inrichting:                        'kampeerwagen',
+  europese_voertuigcategorie:        'M1',
+  merk:                              'TESTMERK',
+  handelsbenaming:                   'Testcamper',
+  datum_eerste_toelating:            '2015-05-11',
+  datum_tenaamstelling:              '2015-05-11',
+  massa_ledig_voertuig:              2890,
+  massa_rijklaar:                    2990,
+  toegestane_maximum_massa_voertuig: 3500,
+  brandstof_omschrijving:            'Diesel',
+  uitlaatemissieniveau:              '6',
+  uitstoot_deeltjes_licht:           null,
+  co2_uitstoot_gecombineerd:         null,
 };
 
 /* =========================================================
@@ -1179,6 +1200,14 @@ async function fetchRDW(kenteken) {
   if (!k || k.length < 4 || k.length > 8) {
     throw new Error('Ongeldig kenteken-formaat.');
   }
+  if (k === TEST_KENTEKEN) {
+    return {
+      fetchedAt: new Date().toISOString(),
+      kenteken: k,
+      _isTestFixture: true,
+      ...TEST_KENTEKEN_DATA,
+    };
+  }
   const url = (base) => `${base}?kenteken=${encodeURIComponent(k)}`;
   let vehJson, fuelJson;
   try {
@@ -1279,6 +1308,7 @@ function renderRDWInfo(rdw) {
   const tenD = parseISO(rdw.datum_tenaamstelling);
 
   const warning = isCamper ? '' : `<div class="banner warn" style="margin-bottom:8px"><span class="status-tag">let op</span>RDW-inrichting: <strong>${escapeHtml(rdw.inrichting || '?')}</strong> — niet als kampeerwagen geregistreerd. De halftarief-camperregeling (artikel 23a) geldt alleen na officiële kampeerauto-keuring; controleer de inrichting.</div>`;
+  const testBanner = rdw._isTestFixture ? `<div class="banner warn" style="margin-bottom:8px"><span class="status-tag">TEST</span>Dit is de ingebakken testfixture <code>TEST-123</code> — geen echte RDW-data. Waarden zijn handmatig gezet voor scenario-tests.</div>` : '';
 
   // Fijnstof-uitstoot weergave + interpretatie volgens artikel 23 lid 4
   let fijnstofRow;
@@ -1292,6 +1322,7 @@ function renderRDWInfo(rdw) {
 
   el.style.display = 'block';
   el.innerHTML = `
+    ${testBanner}
     ${warning}
     <div class="result-row"><span class="label">Merk &amp; model</span><span class="value">${escapeHtml(rdw.merk || '?')} ${escapeHtml(rdw.handelsbenaming || '')}</span></div>
     <div class="result-row"><span class="label">Voertuigsoort &middot; inrichting</span><span class="value">${escapeHtml(rdw.voertuigsoort || '?')} &middot; ${escapeHtml(rdw.inrichting || '?')}</span></div>
